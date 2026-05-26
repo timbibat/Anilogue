@@ -1,10 +1,12 @@
 <?php
 /**
  * Anilogue Watchlist & Database Sync API Endpoint
+ * InfinityFree Compatible
  */
+error_reporting(0);
+ini_set('display_errors', 0);
 header('Content-Type: application/json');
 require_once '../config.php';
-require_once '../includes/db.php';
 
 // Ensure the user is logged in locally
 $userId = isset($_SESSION['local_user_id']) ? $_SESSION['local_user_id'] : null;
@@ -38,7 +40,7 @@ switch ($method) {
             ]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to fetch watchlist: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Failed to fetch watchlist.']);
         }
         break;
 
@@ -104,7 +106,7 @@ switch ($method) {
 
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to save watchlist: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Failed to save watchlist.']);
         }
         break;
 
@@ -130,7 +132,7 @@ switch ($method) {
             ]);
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete entry: ' . $e->getMessage()]);
+            echo json_encode(['error' => 'Failed to delete entry.']);
         }
         break;
 

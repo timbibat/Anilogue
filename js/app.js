@@ -106,14 +106,25 @@ window.App = function App() {
 
         let isMounted = true;
 
-        // Retrieve official MAL logged-in user profile if session exists
+        // Check local database session first, then fall back to MAL OAuth
         async function checkUserAuth() {
             try {
-                const user = await apiService.getCurrentUser();
-                if (isMounted && user && user.isLoggedIn) {
+                // Check local DB session
+                const localSession = await apiService.getLocalUserSession();
+                if (isMounted && localSession && localSession.isLoggedIn) {
+                    if (localSession.authType === 'local') {
+                        setIsLoggedIn(true);
+                        setUsername(localSession.user.username);
+                        setUserPicture("");
+                        return; // Local user found, no need to check MAL
+                    }
+                }
+                // Fall back to MAL OAuth session
+                const malUser = await apiService.getCurrentUser();
+                if (isMounted && malUser && malUser.isLoggedIn) {
                     setIsLoggedIn(true);
-                    setUsername(user.username);
-                    setUserPicture(user.picture || "");
+                    setUsername(malUser.username);
+                    setUserPicture(malUser.picture || "");
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
@@ -218,8 +229,17 @@ window.App = function App() {
         }
     };
 
-    const handleLogout = () => {
-        window.location.href = 'api/auth.php?action=logout';
+    const handleLogout = async () => {
+        try {
+            await apiService.logoutUser();
+        } catch (e) {
+            console.error("Logout API call failed:", e);
+        }
+        // Clear local state and reload
+        setIsLoggedIn(false);
+        setUsername("");
+        setUserPicture("");
+        window.location.reload();
     };
 
     // 1. API Unconfigured Setup Guide Screen (Premium Glassmorphism style)
@@ -546,9 +566,10 @@ window.App = function App() {
             {showLoginModal && (
                 <LoginModal
                     onClose={() => setShowLoginModal(false)}
-                    onLoginSuccess={(user) => {
+                    onLoginSuccess={(user, authType) => {
                         setIsLoggedIn(true);
                         setUsername(user);
+                        setUserPicture("");
                         setShowLoginModal(false);
                     }}
                 />

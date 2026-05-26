@@ -2,13 +2,17 @@
 /**
  * Anilogue Configuration File
  * Loads environment variables from a secure .env file
+ * Fully compatible with both XAMPP (local) and InfinityFree (production)
  */
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Custom native PHP parser for .env files (dependency-free for InfinityFree compatibility)
+// ═══════════════════════════════════════════════════════════════
+// InfinityFree-safe .env loader
+// Uses ONLY $_ENV and $_SERVER superglobals (putenv is DISABLED on InfinityFree)
+// ═══════════════════════════════════════════════════════════════
 function loadEnv($dir) {
     $envPath = $dir . '/.env';
     if (!file_exists($envPath)) {
@@ -30,36 +34,55 @@ function loadEnv($dir) {
             $value = trim($value);
             
             // Remove optional quotes around value
-            if (preg_match('/^["\'](.*)["\']$/', $value, $matches)) {
+            if (preg_match('/^["\'](.*)["\']\s*$/', $value, $matches)) {
                 $value = $matches[1];
             }
             
-            if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
-                putenv(sprintf('%s=%s', $name, $value));
+            // Store in superglobals only (NO putenv — it is disabled on InfinityFree)
+            if (!array_key_exists($name, $_ENV)) {
                 $_ENV[$name] = $value;
+            }
+            if (!array_key_exists($name, $_SERVER)) {
                 $_SERVER[$name] = $value;
             }
         }
     }
 }
 
+/**
+ * Safe environment variable getter
+ * Checks $_ENV, then $_SERVER (InfinityFree-safe, no getenv dependency)
+ */
+function env($key, $default = null) {
+    if (isset($_ENV[$key])) {
+        return $_ENV[$key];
+    }
+    if (isset($_SERVER[$key])) {
+        return $_SERVER[$key];
+    }
+    // Fallback to getenv only if available (works on XAMPP, may not on InfinityFree)
+    $val = @getenv($key);
+    if ($val !== false) {
+        return $val;
+    }
+    return $default;
+}
+
 // Load environment configuration
 loadEnv(__DIR__);
 
 // Retrieve Client ID from Environment variables
-$malClientId = getenv('MAL_CLIENT_ID');
-if (!$malClientId && isset($_ENV['MAL_CLIENT_ID'])) {
-    $malClientId = $_ENV['MAL_CLIENT_ID'];
-}
+$malClientId = env('MAL_CLIENT_ID');
 
 // Define configuration constants
 define('MAL_CLIENT_ID', $malClientId ? trim($malClientId) : 'YOUR_MYANIMELIST_CLIENT_ID');
 define('MAL_API_URL', 'https://api.myanimelist.net/v2');
 
-// Display errors for debugging (disable in production)
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// Suppress errors in production to prevent PHP warnings from breaking JSON responses
+// InfinityFree has display_errors=On by default which corrupts API JSON output
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 
 // Utility function to verify if Client ID is configured
 function isMalClientConfigured() {

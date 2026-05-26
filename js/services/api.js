@@ -162,5 +162,72 @@ window.apiService = {
     getMangaDetails: async function(id) {
         if (!id) throw new Error('Manga ID is required.');
         return await fetchFromProxy(`${MANGA_PROXY_URL}?action=manga_detail&id=${id}`);
+    },
+
+    // ═══════════════════════════════════════════
+    // Local Account Auth API Section
+    // ═══════════════════════════════════════════
+
+    /** Register a new local user account */
+    registerLocalUser: async function(username, email, password) {
+        const response = await fetch('api/register.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        return await response.json();
+    },
+
+    /** Login with local database credentials */
+    loginLocalUser: async function(username, password) {
+        const response = await fetch('api/login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        return await response.json();
+    },
+
+    /** Check current user session (local or MAL) */
+    getLocalUserSession: async function() {
+        return await fetchFromProxy('api/user.php?action=status');
+    },
+
+    /** Logout current user (clears both local and MAL sessions) */
+    logoutUser: async function() {
+        return await fetchFromProxy('api/user.php?action=logout');
+    },
+
+    /** Fetch user's saved watchlist from database */
+    getDBWatchlist: async function() {
+        const response = await fetch('api/watchlist.php');
+        return await response.json();
+    },
+
+    /** Save an item to the user's database watchlist */
+    saveToDBWatchlist: async function(mediaId, mediaType, status, progress, volumesProgress, score) {
+        const response = await fetch('api/watchlist.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                media_id: mediaId,
+                media_type: mediaType,
+                status: status,
+                progress: progress || 0,
+                volumes_progress: volumesProgress || 0,
+                score: score || 0
+            })
+        });
+        return await response.json();
+    },
+
+    /** Delete an item from the user's database watchlist */
+    deleteFromDBWatchlist: async function(mediaId, mediaType) {
+        const response = await fetch('api/watchlist.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ media_id: mediaId, media_type: mediaType })
+        });
+        return await response.json();
     }
 };

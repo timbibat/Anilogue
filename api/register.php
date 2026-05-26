@@ -1,10 +1,12 @@
 <?php
 /**
  * Anilogue Local User Registration Endpoint
+ * InfinityFree Compatible
  */
+error_reporting(0);
+ini_set('display_errors', 0);
 header('Content-Type: application/json');
 require_once '../config.php';
-require_once '../includes/db.php';
 
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -44,11 +46,11 @@ if (strlen($password) < 6) {
     exit;
 }
 
-// Connect to Database
+// Connect to Database (already initialized by config.php)
 $db = getDB();
 if (!$db) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed. Make sure MySQL is running in XAMPP.']);
+    echo json_encode(['error' => 'Database connection failed. Please check your database configuration.']);
     exit;
 }
 
@@ -85,7 +87,7 @@ try {
         'success' => true,
         'message' => 'Registration successful!',
         'user' => [
-            'id' => $userId,
+            'id' => intval($userId),
             'username' => $username,
             'email' => $email
         ]
@@ -93,5 +95,5 @@ try {
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Registration failed: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Registration failed. Please try again.']);
 }

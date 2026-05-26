@@ -2,25 +2,29 @@
 /**
  * Anilogue Local Database Connection & Helper
  * Hybrid implementation fully compatible with both XAMPP (Local) and InfinityFree (Production)
+ * 
+ * IMPORTANT: This file is loaded by config.php which provides the env() helper function.
+ * All environment variable reads use env() instead of getenv() for InfinityFree compatibility.
  */
 
-// Load DB connection credentials from Environment (from .env file) or fall back to local XAMPP defaults
-$dbHost = getenv('DB_HOST') ?: 'localhost';
-$dbUser = getenv('DB_USER') ?: 'root';
-$dbPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
-$dbName = getenv('DB_NAME') ?: 'anilogue_db';
-
 function getDB() {
-    global $dbHost, $dbUser, $dbPass, $dbName;
     static $pdo = null;
     if ($pdo !== null) {
         return $pdo;
     }
+
+    // Read credentials using the safe env() helper defined in config.php
+    // Falls back to XAMPP defaults if .env is missing
+    $dbHost = function_exists('env') ? env('DB_HOST', 'localhost') : 'localhost';
+    $dbUser = function_exists('env') ? env('DB_USER', 'root') : 'root';
+    $dbPass = function_exists('env') ? env('DB_PASS', '') : '';
+    $dbName = function_exists('env') ? env('DB_NAME', 'anilogue_db') : 'anilogue_db';
     
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
+        // EMULATE_PREPARES=true for maximum InfinityFree MySQL driver compatibility
+        PDO::ATTR_EMULATE_PREPARES   => true,
     ];
 
     try {
@@ -41,11 +45,11 @@ function getDB() {
                 
                 $pdo = $rawPdo;
             } catch (PDOException $subException) {
-                error_log("Database auto-creation failed: " . $subException->getMessage());
+                @error_log("Anilogue DB: auto-creation failed: " . $subException->getMessage());
                 return null;
             }
         } else {
-            error_log("Database connection failed: " . $e->getMessage());
+            @error_log("Anilogue DB: connection failed: " . $e->getMessage());
             return null;
         }
     }
@@ -76,7 +80,7 @@ function getDB() {
                 UNIQUE KEY `user_media_unique` (`user_id`, `media_id`, `media_type`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
         } catch (PDOException $tblException) {
-            error_log("Table initialization failed: " . $tblException->getMessage());
+            @error_log("Anilogue DB: table init failed: " . $tblException->getMessage());
         }
     }
 

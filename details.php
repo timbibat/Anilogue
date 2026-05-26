@@ -56,16 +56,25 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
             localStorage.setItem("anilogue_mymangalist_live", JSON.stringify(myMangaList));
         }, [myMangaList]);
 
-        // Retrieve official MAL logged-in user profile if session exists
+        // Check local DB session first, then MAL OAuth
         useEffect(() => {
             let isMounted = true;
             async function checkUserAuth() {
                 try {
-                    const user = await apiService.getCurrentUser();
-                    if (isMounted && user && user.isLoggedIn) {
+                    const localSession = await apiService.getLocalUserSession();
+                    if (isMounted && localSession && localSession.isLoggedIn) {
+                        if (localSession.authType === 'local') {
+                            setIsLoggedIn(true);
+                            setUsername(localSession.user.username);
+                            setUserPicture("");
+                            return;
+                        }
+                    }
+                    const malUser = await apiService.getCurrentUser();
+                    if (isMounted && malUser && malUser.isLoggedIn) {
                         setIsLoggedIn(true);
-                        setUsername(user.username);
-                        setUserPicture(user.picture || "");
+                        setUsername(malUser.username);
+                        setUserPicture(malUser.picture || "");
                     }
                 } catch (err) {
                     console.error("Auth verification failed:", err);
@@ -122,8 +131,16 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
             }
         };
 
-        const handleLogout = () => {
-            window.location.href = 'api/auth.php?action=logout';
+        const handleLogout = async () => {
+            try {
+                await apiService.logoutUser();
+            } catch (e) {
+                console.error("Logout failed:", e);
+            }
+            setIsLoggedIn(false);
+            setUsername("");
+            setUserPicture("");
+            window.location.reload();
         };
 
         return (
@@ -165,9 +182,10 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 {showLoginModal && (
                     <LoginModal 
                         onClose={() => setShowLoginModal(false)}
-                        onLoginSuccess={(user) => {
+                        onLoginSuccess={(user, authType) => {
                             setIsLoggedIn(true);
                             setUsername(user);
+                            setUserPicture("");
                             setShowLoginModal(false);
                         }}
                     />

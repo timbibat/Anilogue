@@ -1,10 +1,12 @@
 <?php
 /**
  * Anilogue Local User Login Endpoint
+ * InfinityFree Compatible
  */
+error_reporting(0);
+ini_set('display_errors', 0);
 header('Content-Type: application/json');
 require_once '../config.php';
-require_once '../includes/db.php';
 
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -25,11 +27,11 @@ if (empty($usernameOrEmail) || empty($password)) {
     exit;
 }
 
-// Connect to Database
+// Connect to Database (already initialized by config.php)
 $db = getDB();
 if (!$db) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed. Make sure MySQL is running in XAMPP.']);
+    echo json_encode(['error' => 'Database connection failed. Please check your database configuration.']);
     exit;
 }
 
@@ -48,7 +50,7 @@ try {
             'success' => true,
             'message' => 'Login successful!',
             'user' => [
-                'id' => $user['id'],
+                'id' => intval($user['id']),
                 'username' => $user['username'],
                 'email' => $user['email']
             ]
@@ -60,5 +62,5 @@ try {
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Login failed: ' . $e->getMessage()]);
+    echo json_encode(['error' => 'Login failed. Please try again.']);
 }
