@@ -39,7 +39,7 @@ switch ($action) {
 
     case 'manga_ranking':
         $type = isset($_GET['type']) ? $_GET['type'] : 'all';
-        $allowedTypes = ['all', 'manga', 'novels', 'lightnovels', 'oneshots', 'doujin', 'manhwa', 'manhua', 'bypopularity', 'favorite'];
+        $allowedTypes = ['all', 'manga', 'novels', 'oneshots', 'doujin', 'manhwa', 'manhua', 'bypopularity', 'favorite'];
         if (!in_array($type, $allowedTypes)) {
             $type = 'all';
         }
