@@ -48,6 +48,9 @@ window.Footer = function Footer() {
                 <div>
                     © 2026 ANILOGUE. All rights designated. Driven by MyAnimeList API v2.
                 </div>
+                <div>
+                    Created by Timothy Irwin Bibat
+                </div>
                 <div className="flex space-x-4 mt-4 sm:mt-0">
                     <a href="#" className="hover:text-animePurple transition-colors">Privacy Charter</a>
                     <a href="#" className="hover:text-animePurple transition-colors">Terms of Operations</a>

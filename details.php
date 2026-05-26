@@ -46,17 +46,48 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             localStorage.setItem("anilogue_mylist_live", JSON.stringify(myList));
         }, [myList]);
 
-        const toggleBookmark = (id) => {
+        // Retrieve official MAL logged-in user profile if session exists
+        useEffect(() => {
+            let isMounted = true;
+            async function checkUserAuth() {
+                try {
+                    const user = await apiService.getCurrentUser();
+                    if (isMounted && user && user.isLoggedIn) {
+                        setIsLoggedIn(true);
+                        setUsername(user.username);
+                    }
+                } catch (err) {
+                    console.error("Auth verification failed:", err);
+                }
+            }
+            checkUserAuth();
+            return () => { isMounted = false; };
+        }, []);
+
+        const toggleBookmark = async (id) => {
             if (myList.includes(id)) {
                 setMyList(myList.filter(item => item !== id));
+                if (isLoggedIn) {
+                    try {
+                        await apiService.updateMALListStatus(id, 'dropped');
+                    } catch (e) {
+                        console.error("Live MAL unsync failed:", e);
+                    }
+                }
             } else {
                 setMyList([...myList, id]);
+                if (isLoggedIn) {
+                    try {
+                        await apiService.updateMALListStatus(id, 'plan_to_watch');
+                    } catch (e) {
+                        console.error("Live MAL sync failed:", e);
+                    }
+                }
             }
         };
 
         const handleLogout = () => {
-            setIsLoggedIn(false);
-            setUsername("");
+            window.location.href = 'api/auth.php?action=logout';
         };
 
         const animeId = parseInt(document.getElementById('root').getAttribute('data-anime-id'));

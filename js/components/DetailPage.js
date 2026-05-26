@@ -2,8 +2,8 @@ const { useState, useEffect } = React;
 const apiService = window.apiService;
 
 // SVG Icons
-const StarIcon = ({ className = "w-3.5 h-3.5 fill-animeYellow text-animeYellow" }) => (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+const StarIcon = () => (
+    <svg className="w-3.5 h-3.5 fill-animeYellow text-animeYellow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 );
 
 const PlusIcon = () => (
@@ -100,15 +100,16 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                         <h1 className="font-orbitron font-black text-3xl sm:text-5xl text-white leading-tight drop-shadow-md tracking-wide max-w-4xl">
                             {currentAnime.title}
                         </h1>
-                        <div className="flex flex-wrap items-center gap-3 pt-1">
-                            <div className="flex items-center space-x-1.5 bg-animeYellow text-darkBg px-3 py-1 rounded font-orbitron font-black text-xs shadow-lg shadow-animeYellow/25 border border-animeYellow/30">
-                                <StarIcon className="w-3.5 h-3.5 fill-darkBg text-darkBg" />
-                                <span>{currentAnime.rating} MAL SCORE</span>
-                            </div>
-                            <span className="text-gray-500 font-medium">|</span>
-                            <span className="text-sm text-gray-300 font-semibold">{currentAnime.year}</span>
-                            <span className="text-gray-500 font-medium">|</span>
-                            <span className="text-sm text-gray-300 font-semibold">{currentAnime.episodes} Episodes</span>
+                        <div className="flex items-center space-x-4 text-sm text-gray-300 font-semibold pt-1">
+                            <span className="flex items-center text-animeYellow space-x-1.5 drop-shadow-[0_0_8px_rgba(245,158,11,0.45)]">
+                                <svg className="w-4 h-4 fill-animeYellow text-animeYellow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <span className="font-orbitron font-extrabold text-base">{currentAnime.rating}</span>
+                                <span className="text-[10px] font-bold text-animeYellow/85 font-orbitron uppercase tracking-wider pl-0.5">Average Score</span>
+                            </span>
+                            <span className="text-gray-600">|</span>
+                            <span>{currentAnime.year}</span>
+                            <span className="text-gray-600">|</span>
+                            <span>{currentAnime.episodes} Episodes</span>
                         </div>
                     </div>
                 </div>
@@ -128,6 +129,20 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                 alt={currentAnime.title} 
                                 className="w-full h-full object-cover"
                             />
+                        </div>
+
+                        {/* Premium Glowing Score Showcase Card */}
+                        <div className="w-64 lg:w-full bg-darkBg/95 border border-animePurple/20 rounded-xl p-4 flex items-center justify-between shadow-lg shadow-animePurple/5 select-none">
+                            <div className="space-y-0.5">
+                                <span className="text-[9px] text-animePurple-light font-orbitron uppercase tracking-widest font-black block">AVERAGE SCORE</span>
+                                <div className="flex items-baseline space-x-1">
+                                    <span className="text-3xl font-black font-orbitron text-animeYellow drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]">{currentAnime.rating}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold">/ 10</span>
+                                </div>
+                            </div>
+                            <div className="w-11 h-11 rounded-full bg-animeYellow/10 border border-animeYellow/30 flex items-center justify-center text-animeYellow shadow-inner shadow-animeYellow/10 animate-pulse">
+                                <svg className="w-5 h-5 fill-animeYellow text-animeYellow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </div>
                         </div>
 
                         {/* Direct Interactions Panel */}

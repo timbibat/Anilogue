@@ -79,6 +79,35 @@ async function getAnimeByGenre(genreName) {
     return await fetchFromProxy(`${PROXY_URL}?action=genre&name=${encodeURIComponent(genreName)}`);
 }
 
+/**
+ * Fetch logged in official MyAnimeList user profile
+ */
+async function getCurrentUser() {
+    return await fetchFromProxy(`${PROXY_URL}?action=me`);
+}
+
+/**
+ * Update official user watchlist status on MAL live
+ */
+async function updateMALListStatus(id, status = 'plan_to_watch') {
+    try {
+        const response = await fetch(`${PROXY_URL}?action=update_status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `id=${id}&status=${status}`
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP status error: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to update MAL status:', error);
+        throw error;
+    }
+}
+
 // Expose to window scope for other Babel components
 window.apiService = {
     getAnimeRanking,
@@ -86,5 +115,7 @@ window.apiService = {
     getAnimeSeason,
     searchAnime,
     getAnimeDetails,
-    getAnimeByGenre
+    getAnimeByGenre,
+    getCurrentUser,
+    updateMALListStatus
 };

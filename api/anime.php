@@ -82,10 +82,75 @@ switch ($action) {
         fetchAndMapMALDetail($url);
         break;
 
+    case 'me':
+        if (!isOauthAuthenticated()) {
+            echo json_encode(['isLoggedIn' => false]);
+            exit;
+        }
+        $url = MAL_API_URL . '/users/@me';
+        $userData = makeMALRequest($url);
+        if (isset($userData['error'])) {
+            echo json_encode(['isLoggedIn' => false, 'error' => $userData['error']]);
+        } else {
+            echo json_encode([
+                'isLoggedIn' => true,
+                'username' => isset($userData['name']) ? $userData['name'] : 'MAL Guest',
+                'picture' => isset($userData['picture']) ? $userData['picture'] : ''
+            ]);
+        }
+        exit;
+
+    case 'update_status':
+        if (!isOauthAuthenticated()) {
+            echo json_encode(['error' => 'You must be logged in via MyAnimeList to sync watchlists.']);
+            exit;
+        }
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        $status = isset($_POST['status']) ? $_POST['status'] : 'plan_to_watch'; // 'watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'
+        
+        if ($id <= 0) {
+            echo json_encode(['error' => 'Valid anime id is required.']);
+            exit;
+        }
+        
+        $url = MAL_API_URL . '/anime/' . $id . '/my_list_status';
+        $postFields = [
+            'status' => $status
+        ];
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT'); // MAL API uses PUT to update status
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postFields));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $headers = [
+            'Authorization: Bearer ' . getOauthAccessToken(),
+            'Content-Type: application/x-www-form-urlencoded'
+        ];
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200) {
+            echo $response;
+        } else {
+            echo json_encode([
+                'error' => 'Failed to update MAL list status.',
+                'http_code' => $httpCode,
+                'response' => json_decode($response, true)
+            ]);
+        }
+        exit;
+
     default:
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Supported actions: search, ranking, suggestions, season, genre, detail.'
+            'message' => 'Invalid action. Supported actions: search, ranking, suggestions, season, genre, detail, me, update_status.'
         ]);
         break;
 }
@@ -99,18 +164,21 @@ function makeMALRequest($url) {
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     
-    $token = trim(MAL_CLIENT_ID);
     $headers = [];
     
-    // Detect key type: standard Client ID is a 32-character hex string.
-    // Bearer token is a very long JWT string (usually > 150 characters).
-    if (strlen($token) <= 45) {
-        $headers[] = 'X-MAL-CLIENT-ID: ' . $token;
+    // If user is authenticated via OAuth2, forward their Access Token. Otherwise fallback to client key.
+    if (isOauthAuthenticated()) {
+        $headers[] = 'Authorization: Bearer ' . getOauthAccessToken();
     } else {
-        if (strpos(strtolower($token), 'bearer ') === 0) {
-            $token = substr($token, 7);
+        $token = trim(MAL_CLIENT_ID);
+        if (strlen($token) <= 45) {
+            $headers[] = 'X-MAL-CLIENT-ID: ' . $token;
+        } else {
+            if (strpos(strtolower($token), 'bearer ') === 0) {
+                $token = substr($token, 7);
+            }
+            $headers[] = 'Authorization: Bearer ' . $token;
         }
-        $headers[] = 'Authorization: Bearer ' . $token;
     }
     
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);

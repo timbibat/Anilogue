@@ -31,8 +31,8 @@ window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myLi
                 />
                 
                 {/* Neon Yellow Star Badge */}
-                <div className="absolute top-2 left-2 flex items-center space-x-1 bg-animeYellow text-darkBg font-orbitron font-extrabold px-2 py-0.5 rounded text-[11px] shadow-lg shadow-animeYellow/25 border border-animeYellow/30 tracking-wide">
-                    <StarIcon className="w-3 h-3 fill-darkBg text-darkBg" />
+                <div className="absolute top-2 left-2 flex items-center space-x-1 glass-effect px-2 py-0.5 rounded text-[10px] font-bold text-animeYellow">
+                    <StarIcon className="w-3.5 h-3.5 fill-animeYellow text-animeYellow" />
                     <span>{anime.rating}</span>
                 </div>
 

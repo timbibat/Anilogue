@@ -5,10 +5,18 @@ const CloseIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 );
 
+const MALLogoIcon = () => (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1.85 14.82l-3.32-3.32a.74.74 0 111.05-1.05l2.27 2.27 5.09-5.09a.74.74 0 111.05 1.05l-5.61 5.61a.73.73 0 01-1.05 0z"/></svg>
+);
+
 window.LoginModal = function LoginModal({ onClose, onLoginSuccess }) {
     const [usernameField, setUsernameField] = useState("");
     const [passwordField, setPasswordField] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+
+    const handleMALRedirect = () => {
+        window.location.href = 'api/auth.php?action=login';
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -38,7 +46,24 @@ window.LoginModal = function LoginModal({ onClose, onLoginSuccess }) {
 
                 <div className="mb-6">
                     <span className="font-orbitron font-black text-2xl tracking-widest text-white">ANI<span className="text-animePurple">LOGUE</span></span>
-                    <p className="text-xs text-gray-400 mt-1">Unlock seamless simulcasts and save watchlists</p>
+                    <p className="text-xs text-gray-400 mt-1">Unlock live synchronizations with MyAnimeList</p>
+                </div>
+
+                {/* Primary: MAL OAuth2 Link Trigger */}
+                <div className="space-y-4 mb-6">
+                    <button 
+                        onClick={handleMALRedirect}
+                        className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-orbitron font-bold text-xs tracking-wider rounded-md flex items-center justify-center space-x-3 transition-all duration-300 shadow-lg shadow-blue-600/25 active:scale-98 cursor-pointer border border-blue-500/20"
+                    >
+                        <MALLogoIcon />
+                        <span>CONTINUE WITH MYANIMELIST</span>
+                    </button>
+                    
+                    <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-white/5"></div>
+                        <span className="flex-shrink mx-4 text-[9px] font-orbitron text-gray-500 font-bold uppercase tracking-wider">OR GUEST ENTRY</span>
+                        <div className="flex-grow border-t border-white/5"></div>
+                    </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,7 +99,7 @@ window.LoginModal = function LoginModal({ onClose, onLoginSuccess }) {
                         type="submit"
                         className="w-full py-3.5 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md hover:from-purple-500 hover:to-purple-700 active:scale-98 transition-all duration-300 shadow-neon-purple shadow-animePurple/25 cursor-pointer"
                     >
-                        ACTIVATE PORTAL
+                        ACTIVATE GUEST PORTAL
                     </button>
                 </form>
 

@@ -102,6 +102,21 @@ window.App = function App() {
         }
 
         let isMounted = true;
+
+        // Retrieve official MAL logged-in user profile if session exists
+        async function checkUserAuth() {
+            try {
+                const user = await apiService.getCurrentUser();
+                if (isMounted && user && user.isLoggedIn) {
+                    setIsLoggedIn(true);
+                    setUsername(user.username);
+                }
+            } catch (err) {
+                console.error("Auth verification failed:", err);
+            }
+        }
+        checkUserAuth();
+
         async function loadHomeData() {
             setInitialLoading(true);
             setNetworkError(false);
@@ -173,17 +188,30 @@ window.App = function App() {
     }, [searchQuery]);
 
     // Add or remove bookmark
-    const toggleBookmark = (id) => {
+    const toggleBookmark = async (id) => {
         if (myList.includes(id)) {
             setMyList(myList.filter(item => item !== id));
+            if (isLoggedIn) {
+                try {
+                    await apiService.updateMALListStatus(id, 'dropped');
+                } catch (e) {
+                    console.error("Live MAL unsync failed:", e);
+                }
+            }
         } else {
             setMyList([...myList, id]);
+            if (isLoggedIn) {
+                try {
+                    await apiService.updateMALListStatus(id, 'plan_to_watch');
+                } catch (e) {
+                    console.error("Live MAL sync failed:", e);
+                }
+            }
         }
     };
 
     const handleLogout = () => {
-        setIsLoggedIn(false);
-        setUsername("");
+        window.location.href = 'api/auth.php?action=logout';
     };
 
     // 1. API Unconfigured Setup Guide Screen (Premium Glassmorphism style)

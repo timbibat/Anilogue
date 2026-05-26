@@ -4,6 +4,10 @@
  * Loads environment variables from a secure .env file
  */
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Custom native PHP parser for .env files (dependency-free for InfinityFree compatibility)
 function loadEnv($dir) {
     $envPath = $dir . '/.env';
@@ -60,4 +64,12 @@ error_reporting(E_ALL);
 // Utility function to verify if Client ID is configured
 function isMalClientConfigured() {
     return defined('MAL_CLIENT_ID') && MAL_CLIENT_ID !== '' && MAL_CLIENT_ID !== 'YOUR_MYANIMELIST_CLIENT_ID';
+}
+
+function getOauthAccessToken() {
+    return isset($_SESSION['mal_access_token']) ? $_SESSION['mal_access_token'] : null;
+}
+
+function isOauthAuthenticated() {
+    return getOauthAccessToken() !== null;
 }
