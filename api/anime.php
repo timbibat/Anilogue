@@ -172,7 +172,7 @@ function fetchAndMapMALDetail($url) {
         exit;
     }
 
-    $mapped = translateMALAnimeSchema($rawData, true);
+    $mapped = translateMALAnimeSchema($rawData);
     
     // Process pictures gallery
     if (isset($rawData['pictures'])) {
@@ -205,7 +205,7 @@ function fetchAndMapMALDetail($url) {
 /**
  * Map a single MyAnimeList API anime item object to the frontend expected properties.
  */
-function translateMALAnimeSchema($anime, $fetchTrailer = false) {
+function translateMALAnimeSchema($anime) {
     $id = isset($anime['id']) ? $anime['id'] : 0;
     
     // Cover mapping
@@ -273,31 +273,6 @@ function translateMALAnimeSchema($anime, $fetchTrailer = false) {
     $ageRating = isset($anime['rating']) ? strtoupper(str_replace('_', '-', $anime['rating'])) : 'PG-13';
     $background = isset($anime['background']) ? $anime['background'] : '';
 
-    // Dynamically fetch or assign embeddable YouTube PV trailers (Rickroll is blocked on localhost)
-    $trailerUrl = 'https://www.youtube.com/embed/Qn5z35B3B7o'; // Default Frieren PV trailer
-    
-    if ($fetchTrailer) {
-        $trailerUrl = fetchCrunchyrollTrailer($anime['title']);
-    } else {
-        // Lightweight mapping for fast list loads
-        $lowerTitle = strtolower($anime['title']);
-        if (strpos($lowerTitle, 'demon slayer') !== false || strpos($lowerTitle, 'kimetsu') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/VQGCKyvzIM4';
-        } elseif (strpos($lowerTitle, 'solo leveling') !== false || strpos($lowerTitle, 'sung jin') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/yMziwV4L8mE';
-        } elseif (strpos($lowerTitle, 'chainsaw') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/q15CRdE5Bv0';
-        } elseif (strpos($lowerTitle, 'jujutsu') !== false || strpos($lowerTitle, 'kaisen') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/pm6t3C-kexs';
-        } elseif (strpos($lowerTitle, 'one piece') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/S8_YwFLCh4U';
-        } elseif (strpos($lowerTitle, 'naruto') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/5TnHb2lZf4c';
-        } elseif (strpos($lowerTitle, 'frieren') !== false) {
-            $trailerUrl = 'https://www.youtube.com/embed/Qn5z35B3B7o';
-        }
-    }
-
     return [
         'id' => $id,
         'title' => $anime['title'],
@@ -312,7 +287,6 @@ function translateMALAnimeSchema($anime, $fetchTrailer = false) {
         'sameDay' => $sameDay,
         'popular' => isset($anime['mean']) && $anime['mean'] >= 8.0,
         'category' => count($genres) > 0 ? $genres[0] : 'Action',
-        'trailer' => $trailerUrl,
         
         // Rich MAL Metadata Profile properties (Non-streaming site layout)
         'rank' => $rank,
@@ -327,49 +301,3 @@ function translateMALAnimeSchema($anime, $fetchTrailer = false) {
     ];
 }
 
-/**
- * Keyless dynamic scraper that fetches the first YouTube video result for a Crunchyroll trailer query.
- */
-function fetchCrunchyrollTrailer($title) {
-    // Standard Crunchyroll trailer query format
-    $query = 'Crunchyroll ' . $title . ' Official Trailer';
-    $url = 'https://www.youtube.com/feeds/videos.xml?search_query=' . urlencode($query);
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-    $xmlData = curl_exec($ch);
-    curl_close($ch);
-    
-    if ($xmlData) {
-        // Disable XML entities for security (prevents XXE attacks)
-        $disableEntities = libxml_disable_entity_loader(true);
-        $xml = simplexml_load_string($xmlData, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING);
-        libxml_disable_entity_loader($disableEntities);
-        
-        if ($xml && isset($xml->entry)) {
-            $firstEntry = $xml->entry[0];
-            $namespaces = $firstEntry->getNameSpaces(true);
-            if (isset($namespaces['yt'])) {
-                $yt = $firstEntry->children($namespaces['yt']);
-                if (isset($yt->videoId)) {
-                    return 'https://www.youtube.com/embed/' . trim((string)$yt->videoId);
-                }
-            }
-            // Fallback link extraction
-            if (isset($firstEntry->link)) {
-                $href = (string)$firstEntry->link['href'];
-                parse_str(parse_url($href, PHP_URL_QUERY), $queryParams);
-                if (isset($queryParams['v'])) {
-                    return 'https://www.youtube.com/embed/' . $queryParams['v'];
-                }
-            }
-        }
-    }
-    
-    // Default fallback to Frieren PV if lookup fails
-    return 'https://www.youtube.com/embed/Qn5z35B3B7o';
-}

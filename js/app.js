@@ -4,7 +4,7 @@ const Navbar = window.Navbar;
 const HeroBanner = window.HeroBanner;
 const AnimeSliderRow = window.AnimeSliderRow;
 const CategoryTabCatalog = window.CategoryTabCatalog;
-const DetailModal = window.DetailModal;
+const DetailPage = window.DetailPage;
 const LoginModal = window.LoginModal;
 const Footer = window.Footer;
 const AnimeCard = window.AnimeCard;
@@ -132,6 +132,11 @@ window.App = function App() {
         return () => { isMounted = false; };
     }, []);
 
+    // Reset selected anime details view when active tab or search query shifts
+    useEffect(() => {
+        setSelectedAnime(null);
+    }, [activeTab, searchQuery]);
+
     // Fetch live search queries
     useEffect(() => {
         if (searchQuery.trim() === "") {
@@ -249,7 +254,14 @@ window.App = function App() {
 
             {/* Dynamic Page Views */}
             <main className="flex-grow">
-                {searchQuery.trim() !== "" ? (
+                {selectedAnime ? (
+                    <DetailPage 
+                        anime={selectedAnime} 
+                        onClose={() => setSelectedAnime(null)}
+                        toggleBookmark={toggleBookmark}
+                        myList={myList}
+                    />
+                ) : searchQuery.trim() !== "" ? (
                     // Live Search Override View
                     <section className="max-w-[1400px] mx-auto px-4 md:px-8 pt-32 pb-16 min-h-[70vh]">
                         <div className="text-left space-y-6 mb-8 border-b border-animePurple/25 pb-6">
@@ -452,16 +464,6 @@ window.App = function App() {
             </main>
 
             <Footer />
-
-            {/* Premium Detail Modal Overlay */}
-            {selectedAnime && (
-                <DetailModal 
-                    anime={selectedAnime} 
-                    onClose={() => setSelectedAnime(null)}
-                    toggleBookmark={toggleBookmark}
-                    myList={myList}
-                />
-            )}
 
             {/* Glassmorphic Account Login Modal */}
             {showLoginModal && (

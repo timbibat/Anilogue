@@ -30,7 +30,7 @@ include 'includes/header.php';
 <script type="text/babel" src="js/components/HeroBanner.js"></script>
 <script type="text/babel" src="js/components/AnimeSliderRow.js"></script>
 <script type="text/babel" src="js/components/CategoryTabCatalog.js"></script>
-<script type="text/babel" src="js/components/DetailModal.js"></script>
+<script type="text/babel" src="js/components/DetailPage.js"></script>
 
 <!-- Load Main Orchestrator App Component -->
 <script type="text/babel" src="js/app.js"></script>
