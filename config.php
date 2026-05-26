@@ -73,3 +73,7 @@ function getOauthAccessToken() {
 function isOauthAuthenticated() {
     return getOauthAccessToken() !== null;
 }
+
+// Auto-initialize local/production database structure silently on every request
+require_once __DIR__ . '/includes/db.php';
+getDB();
