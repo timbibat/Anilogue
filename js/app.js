@@ -26,6 +26,7 @@ window.App = function App() {
     };
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [authType, setAuthType] = useState(null); // 'local' | 'mal' | null
     const [username, setUsername] = useState("");
     const [userPicture, setUserPicture] = useState("");
 
@@ -114,6 +115,7 @@ window.App = function App() {
                 if (isMounted && localSession && localSession.isLoggedIn) {
                     if (localSession.authType === 'local') {
                         setIsLoggedIn(true);
+                        setAuthType('local');
                         setUsername(localSession.user.username);
                         setUserPicture("");
                         return; // Local user found, no need to check MAL
@@ -123,6 +125,7 @@ window.App = function App() {
                 const malUser = await apiService.getCurrentUser();
                 if (isMounted && malUser && malUser.isLoggedIn) {
                     setIsLoggedIn(true);
+                    setAuthType('mal');
                     setUsername(malUser.username);
                     setUserPicture(malUser.picture || "");
                 }
@@ -211,19 +214,39 @@ window.App = function App() {
         if (myList.includes(id)) {
             setMyList(myList.filter(item => item !== id));
             if (isLoggedIn) {
-                try {
-                    await apiService.deleteMALListItem(id, itemType);
-                } catch (e) {
-                    console.error("Live MAL unsync failed:", e);
+                // Sync removal to appropriate backend
+                if (authType === 'local') {
+                    try {
+                        await apiService.deleteFromDBWatchlist(id, itemType);
+                    } catch (e) {
+                        console.error("DB watchlist delete failed:", e);
+                    }
+                }
+                if (authType === 'mal') {
+                    try {
+                        await apiService.deleteMALListItem(id, itemType);
+                    } catch (e) {
+                        console.error("Live MAL unsync failed:", e);
+                    }
                 }
             }
         } else {
             setMyList([...myList, id]);
             if (isLoggedIn) {
-                try {
-                    await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
-                } catch (e) {
-                    console.error("Live MAL sync failed:", e);
+                // Sync addition to appropriate backend
+                if (authType === 'local') {
+                    try {
+                        await apiService.saveToDBWatchlist(id, itemType, 'plan_to_watch');
+                    } catch (e) {
+                        console.error("DB watchlist save failed:", e);
+                    }
+                }
+                if (authType === 'mal') {
+                    try {
+                        await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
+                    } catch (e) {
+                        console.error("Live MAL sync failed:", e);
+                    }
                 }
             }
         }
@@ -237,6 +260,7 @@ window.App = function App() {
         }
         // Clear local state and reload
         setIsLoggedIn(false);
+        setAuthType(null);
         setUsername("");
         setUserPicture("");
         window.location.reload();
@@ -566,8 +590,9 @@ window.App = function App() {
             {showLoginModal && (
                 <LoginModal
                     onClose={() => setShowLoginModal(false)}
-                    onLoginSuccess={(user, authType) => {
+                    onLoginSuccess={(user, loginAuthType) => {
                         setIsLoggedIn(true);
+                        setAuthType(loginAuthType || 'local');
                         setUsername(user);
                         setUserPicture("");
                         setShowLoginModal(false);

@@ -218,7 +218,9 @@ window.apiService = {
 
     /** Fetch user's saved watchlist from database */
     getDBWatchlist: async function() {
-        const response = await fetch('api/watchlist.php');
+        const response = await fetch('api/watchlist.php', {
+            credentials: 'same-origin'
+        });
         return await response.json();
     },
 
@@ -227,6 +229,7 @@ window.apiService = {
         const response = await fetch('api/watchlist.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({
                 media_id: mediaId,
                 media_type: mediaType,
@@ -244,6 +247,7 @@ window.apiService = {
         const response = await fetch('api/watchlist.php', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ media_id: mediaId, media_type: mediaType })
         });
         return await response.json();

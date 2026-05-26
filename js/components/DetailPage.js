@@ -18,7 +18,7 @@ const ArrowLeftIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
 );
 
-window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList, type = "anime", isLoggedIn = false }) {
+window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList, type = "anime", isLoggedIn = false, authType = null }) {
     const [activeTab, setActiveTab] = useState("specifications"); // 'specifications' | 'synopsis'
     const [detailedAnime, setDetailedAnime] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -95,63 +95,92 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
     const handleMALSync = async () => {
         setIsUpdatingMAL(true);
         try {
-            const extraFields = {
-                score: malScore
-            };
-            if (type === "manga") {
-                extraFields.num_chapters_read = malProgress;
-                extraFields.num_volumes_read = malVolsProgress;
-            } else {
-                extraFields.num_watched_episodes = malProgress;
-            }
-            const res = await apiService.updateMALListStatus(currentAnime.id, malStatus, type, extraFields);
-            if (res && !res.error) {
-                // Update local detailed state
-                setDetailedAnime(prev => ({
-                    ...prev,
-                    my_list_status: res
-                }));
-                // Make sure it is locally bookmarked too!
-                if (!isBookmarked) {
-                    toggleBookmark(currentAnime.id, type);
+            if (authType === 'local') {
+                // Save to local database
+                const res = await apiService.saveToDBWatchlist(
+                    currentAnime.id, type, malStatus, malProgress, malVolsProgress, malScore
+                );
+                if (res && res.success) {
+                    if (!isBookmarked) {
+                        toggleBookmark(currentAnime.id, type);
+                    }
+                    alert("Successfully saved to your watchlist!");
+                } else {
+                    alert("Error saving: " + (res ? res.error : "Unknown error"));
                 }
-                alert("Successfully synchronized status to MyAnimeList!");
             } else {
-                alert("Error synchronizing status: " + (res ? res.error : "Unknown error"));
+                // Sync to MyAnimeList
+                const extraFields = {
+                    score: malScore
+                };
+                if (type === "manga") {
+                    extraFields.num_chapters_read = malProgress;
+                    extraFields.num_volumes_read = malVolsProgress;
+                } else {
+                    extraFields.num_watched_episodes = malProgress;
+                }
+                const res = await apiService.updateMALListStatus(currentAnime.id, malStatus, type, extraFields);
+                if (res && !res.error) {
+                    setDetailedAnime(prev => ({
+                        ...prev,
+                        my_list_status: res
+                    }));
+                    if (!isBookmarked) {
+                        toggleBookmark(currentAnime.id, type);
+                    }
+                    alert("Successfully synchronized status to MyAnimeList!");
+                } else {
+                    alert("Error synchronizing status: " + (res ? res.error : "Unknown error"));
+                }
             }
         } catch (e) {
-            console.error("Failed to sync to MAL:", e);
-            alert("Connection error synchronizing to MyAnimeList.");
+            console.error("Failed to sync:", e);
+            alert("Connection error. Please try again.");
         } finally {
             setIsUpdatingMAL(false);
         }
     };
 
     const handleMALDelete = async () => {
-        if (!confirm("Are you sure you want to remove this from your MyAnimeList watchlist entirely?")) return;
+        if (!confirm("Are you sure you want to remove this from your watchlist entirely?")) return;
         setIsUpdatingMAL(true);
         try {
-            const res = await apiService.deleteMALListItem(currentAnime.id, type);
-            if (res && !res.error) {
-                setDetailedAnime(prev => ({
-                    ...prev,
-                    my_list_status: null
-                }));
-                if (isBookmarked) {
-                    toggleBookmark(currentAnime.id, type);
+            if (authType === 'local') {
+                const res = await apiService.deleteFromDBWatchlist(currentAnime.id, type);
+                if (res && res.success) {
+                    if (isBookmarked) {
+                        toggleBookmark(currentAnime.id, type);
+                    }
+                    setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
+                    setMalProgress(0);
+                    setMalVolsProgress(0);
+                    setMalScore(0);
+                    alert("Removed from your watchlist successfully!");
+                } else {
+                    alert("Error removing: " + (res ? res.error : "Unknown error"));
                 }
-                // Reset form values to default
-                setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
-                setMalProgress(0);
-                setMalVolsProgress(0);
-                setMalScore(0);
-                alert("Removed from MyAnimeList successfully!");
             } else {
-                alert("Error removing from MyAnimeList: " + (res ? res.error : "Unknown error"));
+                const res = await apiService.deleteMALListItem(currentAnime.id, type);
+                if (res && !res.error) {
+                    setDetailedAnime(prev => ({
+                        ...prev,
+                        my_list_status: null
+                    }));
+                    if (isBookmarked) {
+                        toggleBookmark(currentAnime.id, type);
+                    }
+                    setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
+                    setMalProgress(0);
+                    setMalVolsProgress(0);
+                    setMalScore(0);
+                    alert("Removed from MyAnimeList successfully!");
+                } else {
+                    alert("Error removing from MyAnimeList: " + (res ? res.error : "Unknown error"));
+                }
             }
         } catch (e) {
-            console.error("Failed to delete from MAL:", e);
-            alert("Connection error removing from MyAnimeList.");
+            console.error("Failed to delete:", e);
+            alert("Connection error. Please try again.");
         } finally {
             setIsUpdatingMAL(false);
         }

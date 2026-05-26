@@ -37,6 +37,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
     function DetailApp() {
         const [showLoginModal, setShowLoginModal] = useState(false);
         const [isLoggedIn, setIsLoggedIn] = useState(false);
+        const [authType, setAuthType] = useState(null); // 'local' | 'mal' | null
         const [username, setUsername] = useState("");
         const [userPicture, setUserPicture] = useState("");
         const [myList, setMyList] = useState(() => {
@@ -65,6 +66,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                     if (isMounted && localSession && localSession.isLoggedIn) {
                         if (localSession.authType === 'local') {
                             setIsLoggedIn(true);
+                            setAuthType('local');
                             setUsername(localSession.user.username);
                             setUserPicture("");
                             return;
@@ -73,6 +75,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                     const malUser = await apiService.getCurrentUser();
                     if (isMounted && malUser && malUser.isLoggedIn) {
                         setIsLoggedIn(true);
+                        setAuthType('mal');
                         setUsername(malUser.username);
                         setUserPicture(malUser.picture || "");
                     }
@@ -92,19 +95,21 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 if (myMangaList.includes(id)) {
                     setMyMangaList(myMangaList.filter(item => item !== id));
                     if (isLoggedIn) {
-                        try {
-                            await apiService.deleteMALListItem(id, 'manga');
-                        } catch (e) {
-                            console.error("Live MAL unsync failed:", e);
+                        if (authType === 'local') {
+                            try { await apiService.deleteFromDBWatchlist(id, 'manga'); } catch (e) { console.error("DB delete failed:", e); }
+                        }
+                        if (authType === 'mal') {
+                            try { await apiService.deleteMALListItem(id, 'manga'); } catch (e) { console.error("MAL unsync failed:", e); }
                         }
                     }
                 } else {
                     setMyMangaList([...myMangaList, id]);
                     if (isLoggedIn) {
-                        try {
-                            await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga');
-                        } catch (e) {
-                            console.error("Live MAL sync failed:", e);
+                        if (authType === 'local') {
+                            try { await apiService.saveToDBWatchlist(id, 'manga', 'plan_to_read'); } catch (e) { console.error("DB save failed:", e); }
+                        }
+                        if (authType === 'mal') {
+                            try { await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga'); } catch (e) { console.error("MAL sync failed:", e); }
                         }
                     }
                 }
@@ -112,19 +117,21 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 if (myList.includes(id)) {
                     setMyList(myList.filter(item => item !== id));
                     if (isLoggedIn) {
-                        try {
-                            await apiService.deleteMALListItem(id, 'anime');
-                        } catch (e) {
-                            console.error("Live MAL unsync failed:", e);
+                        if (authType === 'local') {
+                            try { await apiService.deleteFromDBWatchlist(id, 'anime'); } catch (e) { console.error("DB delete failed:", e); }
+                        }
+                        if (authType === 'mal') {
+                            try { await apiService.deleteMALListItem(id, 'anime'); } catch (e) { console.error("MAL unsync failed:", e); }
                         }
                     }
                 } else {
                     setMyList([...myList, id]);
                     if (isLoggedIn) {
-                        try {
-                            await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime');
-                        } catch (e) {
-                            console.error("Live MAL sync failed:", e);
+                        if (authType === 'local') {
+                            try { await apiService.saveToDBWatchlist(id, 'anime', 'plan_to_watch'); } catch (e) { console.error("DB save failed:", e); }
+                        }
+                        if (authType === 'mal') {
+                            try { await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime'); } catch (e) { console.error("MAL sync failed:", e); }
                         }
                     }
                 }
@@ -138,6 +145,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 console.error("Logout failed:", e);
             }
             setIsLoggedIn(false);
+            setAuthType(null);
             setUsername("");
             setUserPicture("");
             window.location.reload();
@@ -169,6 +177,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                         anime={{ id: animeId }} 
                         type={mediaType}
                         isLoggedIn={isLoggedIn}
+                        authType={authType}
                         onClose={() => {
                             window.location.href = 'index.php?tab=' + (mediaType === 'manga' ? 'manga' : 'home');
                         }}
@@ -182,8 +191,9 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 {showLoginModal && (
                     <LoginModal 
                         onClose={() => setShowLoginModal(false)}
-                        onLoginSuccess={(user, authType) => {
+                        onLoginSuccess={(user, loginAuthType) => {
                             setIsLoggedIn(true);
+                            setAuthType(loginAuthType || 'local');
                             setUsername(user);
                             setUserPicture("");
                             setShowLoginModal(false);
