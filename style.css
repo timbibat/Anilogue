@@ -1,0 +1,137 @@
+/* style.css - Custom Anime Streaming Stylesheet */
+
+/* Set a highly optimized custom scrollbar for the page */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #06010d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6d28d9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+  box-shadow: 0 0 8px #a855f7;
+}
+
+/* Hide scrollbar for elements with .no-scrollbar (like sliders) */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Custom Glassmorphism backdrop filter */
+.glass-effect {
+  background: rgba(18, 2, 36, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.glass-effect-light {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Premium Glow effects */
+.neon-glow-purple {
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
+}
+
+.neon-glow-yellow {
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+}
+
+.neon-border-purple {
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+}
+
+.neon-border-purple:hover {
+  border-color: rgba(168, 85, 247, 0.9);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+}
+
+/* Hero gradient overlays */
+.hero-gradient {
+  background: linear-gradient(to top, #0b001a 0%, rgba(11, 0, 26, 0.8) 40%, rgba(11, 0, 26, 0) 100%);
+}
+
+.hero-gradient-left {
+  background: linear-gradient(to right, #0b001a 0%, rgba(11, 0, 26, 0.6) 50%, rgba(11, 0, 26, 0) 100%);
+}
+
+/* Anime card hover interactions */
+.anime-card-hover {
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.anime-card-hover:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 10px 25px rgba(168, 85, 247, 0.4);
+  border-color: rgba(168, 85, 247, 0.8);
+}
+
+/* Slide animation for modal */
+@keyframes slideUp {
+  from {
+    transform: translateY(100px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Text glow styles */
+.neon-text-purple {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+.neon-text-yellow {
+  text-shadow: 0 0 8px rgba(234, 179, 8, 0.8), 0 0 15px rgba(234, 179, 8, 0.4);
+}
+
+/* Image zoom on hover */
+.img-zoom-container {
+  overflow: hidden;
+}
+
+.img-zoom-container img {
+  transition: transform 0.5s ease;
+}
+
+.img-zoom-container:hover img {
+  transform: scale(1.08);
+}
+
+/* Custom indicator tabs for sliders */
+.slide-indicator {
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Background grid styling */
+.grid-bg {
+  background-image: 
+    radial-gradient(rgba(139, 92, 246, 0.12) 1.5px, transparent 1.5px), 
+    radial-gradient(rgba(139, 92, 246, 0.08) 1.5px, transparent 1.5px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+}
