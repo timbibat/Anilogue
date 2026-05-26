@@ -33,9 +33,11 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                 {/* Brand Logo */}
                 <div className="flex items-center space-x-8">
                     <a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("home"); setSearchQuery(""); }} className="flex items-center space-x-2 group">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-animePurple to-purple-800 flex items-center justify-center neon-glow-purple shadow-animePurple/30 group-hover:scale-105 transition-transform duration-300">
-                            <span className="font-orbitron font-extrabold text-xl text-white tracking-tighter">A</span>
-                        </div>
+                        <img 
+                            src="images/favicon.png" 
+                            alt="Anilogue Logo" 
+                            className="w-10 h-10 object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(139,92,246,0.3)]"
+                        />
                         <span className="font-orbitron font-black text-2xl tracking-widest text-white group-hover:text-animePurple transition-colors duration-300">ANI<span className="text-animePurple">LOGUE</span></span>
                     </a>
 

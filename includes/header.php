@@ -10,6 +10,9 @@
     <meta name="keywords" content="anime, streaming, watch anime, subbed, dubbed, myanimelist, live anime, anilogue, premium anime">
     <meta name="author" content="Anilogue Interactive">
     
+    <!-- Favicon Icon -->
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    
     <!-- Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
