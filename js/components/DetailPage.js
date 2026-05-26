@@ -18,20 +18,22 @@ const ArrowLeftIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
 );
 
-window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList }) {
+window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList, type = "anime" }) {
     const [activeTab, setActiveTab] = useState("specifications"); // 'specifications' | 'synopsis'
     const [detailedAnime, setDetailedAnime] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const isBookmarked = myList.includes(anime.id);
 
-    // Fetch full anime details on mount
+    // Fetch full details on mount
     useEffect(() => {
         let isMounted = true;
         async function fetchDetails() {
             setLoading(true);
             try {
-                const data = await apiService.getAnimeDetails(anime.id);
+                const data = type === "manga" 
+                    ? await apiService.getMangaDetails(anime.id)
+                    : await apiService.getAnimeDetails(anime.id);
                 if (isMounted) {
                     if (data && !data.isUnconfigured) {
                         setDetailedAnime(data);
@@ -40,7 +42,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                     }
                 }
             } catch (err) {
-                console.error("Error loading anime details:", err);
+                console.error("Error loading details:", err);
                 if (isMounted) {
                     setDetailedAnime(anime);
                 }
@@ -53,7 +55,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
         
         fetchDetails();
         return () => { isMounted = false; };
-    }, [anime]);
+    }, [anime, type]);
 
     // Scroll to top on mount
     useEffect(() => {
@@ -109,7 +111,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                             <span className="text-gray-600">|</span>
                             <span>{currentAnime.year}</span>
                             <span className="text-gray-600">|</span>
-                            <span>{currentAnime.episodes} Episodes</span>
+                            <span>{type === "manga" ? `${currentAnime.chapters} Chapters / ${currentAnime.volumes} Volumes` : `${currentAnime.episodes} Episodes`}</span>
                         </div>
                     </div>
                 </div>
@@ -148,7 +150,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                         {/* Direct Interactions Panel */}
                         <div className="w-64 lg:w-full space-y-3">
                             <button 
-                                onClick={() => toggleBookmark(currentAnime.id)}
+                                onClick={() => toggleBookmark(currentAnime.id, type)}
                                 className={`w-full py-3.5 rounded font-orbitron font-bold text-xs tracking-wider border flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer ${isBookmarked ? 'bg-animeYellow/10 border-animeYellow text-animeYellow' : 'bg-animePurple border-animePurple hover:bg-animePurple/85 text-white hover:border-animePurple shadow-lg shadow-animePurple/20'}`}
                             >
                                 {isBookmarked ? (
@@ -165,7 +167,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                             </button>
 
                             <a 
-                                href={`https://myanimelist.net/anime/${currentAnime.id}`} 
+                                href={type === "manga" ? `https://myanimelist.net/manga/${currentAnime.id}` : `https://myanimelist.net/anime/${currentAnime.id}`} 
                                 target="_blank" 
                                 rel="noopener"
                                 className="w-full py-3.5 rounded bg-darkCard/80 backdrop-blur-md border border-animePurple/20 hover:border-animePurple text-white font-orbitron font-bold text-xs tracking-wider flex items-center justify-center space-x-2 transition-all hover:scale-[1.02] cursor-pointer text-center"
@@ -252,18 +254,41 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                             <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Scoring Users</span>
                                             <span className="text-white text-lg font-bold mt-1">{currentAnime.scorers}</span>
                                         </div>
-                                        <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between lg:col-span-2">
-                                            <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Broadcast Schedule</span>
-                                            <span className="text-white text-base font-semibold mt-1">{currentAnime.broadcast}</span>
-                                        </div>
-                                        <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
-                                            <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Original Source</span>
-                                            <span className="text-white text-base font-semibold mt-1">{currentAnime.source}</span>
-                                        </div>
-                                        <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
-                                            <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Episode Duration</span>
-                                            <span className="text-white text-base font-semibold mt-1">{currentAnime.duration}</span>
-                                        </div>
+                                        {type === "manga" ? (
+                                            <>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Total Chapters</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.chapters}</span>
+                                                </div>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Total Volumes</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.volumes}</span>
+                                                </div>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Serialization</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.serialization}</span>
+                                                </div>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between lg:col-span-2">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Authors / Creators</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.authors}</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between lg:col-span-2">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Broadcast Schedule</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.broadcast}</span>
+                                                </div>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Original Source</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.source}</span>
+                                                </div>
+                                                <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between">
+                                                    <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Episode Duration</span>
+                                                    <span className="text-white text-base font-semibold mt-1">{currentAnime.duration}</span>
+                                                </div>
+                                            </>
+                                        )}
                                         <div className="bg-darkBg/80 border border-animePurple/10 p-4 rounded-xl flex flex-col justify-between lg:col-span-3">
                                             <span className="text-[10px] text-gray-500 block font-orbitron uppercase tracking-wider">Age Classification</span>
                                             <span className="text-white text-base font-semibold mt-1">{currentAnime.ageRating}</span>

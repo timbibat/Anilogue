@@ -21,7 +21,8 @@ window.App = function App() {
     
     // Modals & Authentication
     const handleAnimeSelect = (anime) => {
-        window.location.href = 'details.php?id=' + anime.id;
+        const type = (anime.type && ['Manga', 'Novel', 'Lightnovel', 'Oneshot', 'Doujin', 'Manhwa', 'Manhua'].includes(anime.type)) || anime.chapters !== undefined ? 'manga' : 'anime';
+        window.location.href = `details.php?type=${type}&id=${anime.id}`;
     };
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -30,6 +31,7 @@ window.App = function App() {
     // Live API Lists state
     const [airingAnime, setAiringAnime] = useState([]);
     const [popularAnime, setPopularAnime] = useState([]);
+    const [popularManga, setPopularManga] = useState([]);
     const [moviesAnime, setMoviesAnime] = useState([]);
     const [featuredAnime, setFeaturedAnime] = useState([]);
     const [searchResults, setSearchResults] = useState([]);
@@ -122,20 +124,22 @@ window.App = function App() {
             setNetworkError(false);
             try {
                 // Fetch rankings and suggestions concurrently
-                const [suggestions, popular, movies] = await Promise.all([
+                const [suggestions, popular, movies, topManga] = await Promise.all([
                     apiService.getAnimeRanking("airing"),
                     apiService.getAnimeRanking("all"),
-                    apiService.getAnimeRanking("movie")
+                    apiService.getAnimeRanking("movie"),
+                    apiService.getMangaRanking("all")
                 ]);
 
                 if (isMounted) {
                     // Check if proxy reported unconfigured credentials
-                    if ((suggestions && suggestions.isUnconfigured) || (popular && popular.isUnconfigured)) {
+                    if ((suggestions && suggestions.isUnconfigured) || (popular && popular.isUnconfigured) || (topManga && topManga.isUnconfigured)) {
                         setApiUnconfigured(true);
                     } else {
                         setAiringAnime(suggestions || []);
                         setPopularAnime(popular || []);
                         setMoviesAnime(movies || []);
+                        setPopularManga(topManga || []);
                         
                         // Select top 3 popular anime to showcase in the Hero Banner carousel
                         if (popular && popular.length > 0) {
@@ -171,7 +175,9 @@ window.App = function App() {
         const delayDebounce = setTimeout(async () => {
             setSearchLoading(true);
             try {
-                const results = await apiService.searchAnime(searchQuery);
+                const results = activeTab === "manga"
+                    ? await apiService.searchManga(searchQuery)
+                    : await apiService.searchAnime(searchQuery);
                 if (results && results.isUnconfigured) {
                     setApiUnconfigured(true);
                 } else {
@@ -185,15 +191,15 @@ window.App = function App() {
         }, 500); // 500ms debounce
 
         return () => clearTimeout(delayDebounce);
-    }, [searchQuery]);
+    }, [searchQuery, activeTab]);
 
     // Add or remove bookmark
-    const toggleBookmark = async (id) => {
+    const toggleBookmark = async (id, itemType = 'anime') => {
         if (myList.includes(id)) {
             setMyList(myList.filter(item => item !== id));
             if (isLoggedIn) {
                 try {
-                    await apiService.updateMALListStatus(id, 'dropped');
+                    await apiService.updateMALListStatus(id, 'dropped', itemType);
                 } catch (e) {
                     console.error("Live MAL unsync failed:", e);
                 }
@@ -202,7 +208,7 @@ window.App = function App() {
             setMyList([...myList, id]);
             if (isLoggedIn) {
                 try {
-                    await apiService.updateMALListStatus(id, 'plan_to_watch');
+                    await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
                 } catch (e) {
                     console.error("Live MAL sync failed:", e);
                 }
@@ -372,6 +378,15 @@ window.App = function App() {
                                                 myList={myList}
                                             />
 
+                                            <AnimeSliderRow 
+                                                title="Top Ranked Manga" 
+                                                subtitle="Highest rated manga of all time"
+                                                animeList={popularManga}
+                                                onCardClick={handleAnimeSelect}
+                                                toggleBookmark={(id) => toggleBookmark(id, 'manga')}
+                                                myList={myList}
+                                            />
+
                                             <CategoryTabCatalog 
                                                 onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
@@ -414,6 +429,35 @@ window.App = function App() {
                                                 anime={anime} 
                                                 onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
+                                                myList={myList}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+                        )}
+
+                        {activeTab === "manga" && (
+                            <section className="max-w-[1400px] mx-auto px-4 md:px-8 pt-32 pb-16 min-h-[70vh]">
+                                <div className="text-left space-y-6 mb-8 border-b border-animePurple/25 pb-6">
+                                    <h2 className="font-orbitron font-extrabold text-2xl sm:text-3xl text-white uppercase tracking-wider neon-text-purple">
+                                        Top Ranked Manga
+                                    </h2>
+                                    <p className="text-xs text-gray-400 font-medium">Top popular manga and novels on MyAnimeList</p>
+                                </div>
+
+                                {initialLoading ? (
+                                    <div className="flex items-center justify-center py-24">
+                                        <div className="w-12 h-12 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
+                                        {popularManga.map(manga => (
+                                            <AnimeCard 
+                                                key={manga.id} 
+                                                anime={manga} 
+                                                onCardClick={handleAnimeSelect}
+                                                toggleBookmark={(id) => toggleBookmark(id, 'manga')}
                                                 myList={myList}
                                             />
                                         ))}

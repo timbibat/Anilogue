@@ -40,22 +40,20 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                         />
                         <span className="font-orbitron font-black text-2xl tracking-widest text-white group-hover:text-animePurple transition-colors duration-300">ANI<span className="text-animePurple">LOGUE</span></span>
                     </a>
-
-                    {/* Center Navigation Links (Desktop) */}
-                    <nav className="hidden lg:flex items-center space-x-6 text-sm font-semibold tracking-wider text-gray-400">
-                        <button 
-                            onClick={() => { setActiveTab("home"); setSearchQuery(""); }}
-                            className={`hover:text-white uppercase transition-colors relative py-1 ${activeTab === 'home' && searchQuery === '' ? 'text-white' : ''}`}
-                        >
-                            Home
-                            {activeTab === 'home' && searchQuery === '' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-animePurple to-transparent"></span>}
-                        </button>
+                    <nav className="hidden lg:flex items-center space-x-6 text-sm text-gray-300 font-semibold uppercase">
                         <button 
                             onClick={() => { setActiveTab("anime"); setSearchQuery(""); }}
                             className={`hover:text-white uppercase transition-colors relative py-1 ${activeTab === 'anime' ? 'text-white' : ''}`}
                         >
                             Anime
                             {activeTab === 'anime' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-animePurple to-transparent"></span>}
+                        </button>
+                        <button 
+                            onClick={() => { setActiveTab("manga"); setSearchQuery(""); }}
+                            className={`hover:text-white uppercase transition-colors relative py-1 ${activeTab === 'manga' ? 'text-white' : ''}`}
+                        >
+                            Manga
+                            {activeTab === 'manga' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-animePurple to-transparent"></span>}
                         </button>
                         <button 
                             onClick={() => { setActiveTab("movies"); setSearchQuery(""); }}
@@ -87,7 +85,7 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onFocus={() => setSearchFocused(true)}
                             onBlur={() => setSearchFocused(false)}
-                            placeholder="Search anime..." 
+                            placeholder="Search catalog..." 
                             className="bg-transparent border-none outline-none text-xs text-white placeholder-gray-500 w-full ml-2 focus:ring-0"
                         />
                         {searchQuery && (
@@ -101,6 +99,9 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                     <div className="flex lg:hidden items-center space-x-3 text-gray-400">
                         <button onClick={() => { setActiveTab("home"); setSearchQuery(""); }} className={`p-1.5 hover:text-white ${activeTab === "home" ? "text-animePurple" : ""}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        </button>
+                        <button onClick={() => { setActiveTab("manga"); setSearchQuery(""); }} className={`p-1.5 hover:text-white ${activeTab === "manga" ? "text-animePurple" : ""}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                         </button>
                         <button onClick={() => { setActiveTab("mylist"); setSearchQuery(""); }} className={`p-1.5 hover:text-white relative ${activeTab === "mylist" ? "text-animePurple" : ""}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>

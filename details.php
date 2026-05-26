@@ -5,10 +5,11 @@
 require_once 'config.php';
 include 'includes/header.php';
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$type = isset($_GET['type']) ? $_GET['type'] : 'anime';
 ?>
 
 <!-- React Mount Node -->
-<div id="root" data-anime-id="<?php echo $id; ?>">
+<div id="root" data-anime-id="<?php echo $id; ?>" data-media-type="<?php echo htmlspecialchars($type); ?>">
     <div class="flex items-center justify-center min-h-screen flex-col space-y-4">
         <div class="w-16 h-16 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
         <p class="font-orbitron tracking-widest text-animePurple text-lg animate-pulse">SYNCHRONIZING PROFILE...</p>
@@ -64,12 +65,15 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             return () => { isMounted = false; };
         }, []);
 
-        const toggleBookmark = async (id) => {
+        const animeId = parseInt(document.getElementById('root').getAttribute('data-anime-id'));
+        const mediaType = document.getElementById('root').getAttribute('data-media-type') || 'anime';
+
+        const toggleBookmark = async (id, itemType = mediaType) => {
             if (myList.includes(id)) {
                 setMyList(myList.filter(item => item !== id));
                 if (isLoggedIn) {
                     try {
-                        await apiService.updateMALListStatus(id, 'dropped');
+                        await apiService.updateMALListStatus(id, 'dropped', itemType);
                     } catch (e) {
                         console.error("Live MAL unsync failed:", e);
                     }
@@ -78,7 +82,7 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
                 setMyList([...myList, id]);
                 if (isLoggedIn) {
                     try {
-                        await apiService.updateMALListStatus(id, 'plan_to_watch');
+                        await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
                     } catch (e) {
                         console.error("Live MAL sync failed:", e);
                     }
@@ -89,8 +93,6 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         const handleLogout = () => {
             window.location.href = 'api/auth.php?action=logout';
         };
-
-        const animeId = parseInt(document.getElementById('root').getAttribute('data-anime-id'));
 
         return (
             <div className="relative min-h-screen pb-16 flex flex-col justify-between">
@@ -115,8 +117,9 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
                 <main className="flex-grow">
                     <DetailPage 
                         anime={{ id: animeId }} 
+                        type={mediaType}
                         onClose={() => {
-                            window.location.href = 'index.php';
+                            window.location.href = 'index.php?tab=' + (mediaType === 'manga' ? 'manga' : 'home');
                         }}
                         toggleBookmark={toggleBookmark}
                         myList={myList}

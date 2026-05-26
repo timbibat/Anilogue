@@ -89,14 +89,14 @@ async function getCurrentUser() {
 /**
  * Update official user watchlist status on MAL live
  */
-async function updateMALListStatus(id, status = 'plan_to_watch') {
+async function updateMALListStatus(id, status = 'plan_to_watch', type = 'anime') {
     try {
         const response = await fetch(`${PROXY_URL}?action=update_status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: `id=${id}&status=${status}`
+            body: `id=${id}&status=${status}&type=${type}`
         });
         if (!response.ok) {
             throw new Error(`HTTP status error: ${response.status}`);
@@ -117,5 +117,18 @@ window.apiService = {
     getAnimeDetails,
     getAnimeByGenre,
     getCurrentUser,
-    updateMALListStatus
+    updateMALListStatus,
+    
+    // Manga API Section
+    searchManga: async function(query) {
+        if (!query || query.trim() === '') return [];
+        return await fetchFromProxy(`${PROXY_URL}?action=manga_search&q=${encodeURIComponent(query)}`);
+    },
+    getMangaRanking: async function(type = 'all') {
+        return await fetchFromProxy(`${PROXY_URL}?action=manga_ranking&type=${type}`);
+    },
+    getMangaDetails: async function(id) {
+        if (!id) throw new Error('Manga ID is required.');
+        return await fetchFromProxy(`${PROXY_URL}?action=manga_detail&id=${id}`);
+    }
 };
