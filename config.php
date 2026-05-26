@@ -6,6 +6,14 @@
  */
 
 if (session_status() === PHP_SESSION_NONE) {
+    // Ensure session cookie covers the entire site (fixes path mismatch between /Anime/ and /Anime/api/)
+    session_set_cookie_params([
+        'lifetime' => 86400 * 30, // 30 days
+        'path'     => '/',         // Root path — accessible from any sub-directory
+        'secure'   => false,       // Allow HTTP for XAMPP local dev
+        'httponly'  => true,        // Prevent JS access to session cookie (security)
+        'samesite'  => 'Lax'       // CSRF protection
+    ]);
     session_start();
 }
 

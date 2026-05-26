@@ -173,6 +173,7 @@ window.apiService = {
         const response = await fetch('api/register.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ username, email, password })
         });
         return await response.json();
@@ -183,6 +184,7 @@ window.apiService = {
         const response = await fetch('api/login.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
             body: JSON.stringify({ username, password })
         });
         return await response.json();
@@ -190,12 +192,28 @@ window.apiService = {
 
     /** Check current user session (local or MAL) */
     getLocalUserSession: async function() {
-        return await fetchFromProxy('api/user.php?action=status');
+        try {
+            const response = await fetch('api/user.php?action=status', {
+                credentials: 'same-origin'
+            });
+            return await response.json();
+        } catch (e) {
+            console.error('Session check failed:', e);
+            return { isLoggedIn: false };
+        }
     },
 
     /** Logout current user (clears both local and MAL sessions) */
     logoutUser: async function() {
-        return await fetchFromProxy('api/user.php?action=logout');
+        try {
+            const response = await fetch('api/user.php?action=logout', {
+                credentials: 'same-origin'
+            });
+            return await response.json();
+        } catch (e) {
+            console.error('Logout request failed:', e);
+            return { success: false };
+        }
     },
 
     /** Fetch user's saved watchlist from database */
