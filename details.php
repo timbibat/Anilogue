@@ -42,18 +42,10 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
             const saved = localStorage.getItem("anilogue_mylist_live");
             return saved ? JSON.parse(saved) : [];
         });
-        const [myMangaList, setMyMangaList] = useState(() => {
-            const saved = localStorage.getItem("anilogue_mymangalist_live");
-            return saved ? JSON.parse(saved) : [];
-        });
 
         useEffect(() => {
             localStorage.setItem("anilogue_mylist_live", JSON.stringify(myList));
         }, [myList]);
-
-        useEffect(() => {
-            localStorage.setItem("anilogue_mymangalist_live", JSON.stringify(myMangaList));
-        }, [myMangaList]);
 
         // Retrieve official MAL logged-in user profile if session exists
         useEffect(() => {
@@ -77,44 +69,22 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
         const mediaType = document.getElementById('root').getAttribute('data-media-type') || 'anime';
 
         const toggleBookmark = async (id, itemType = mediaType) => {
-            if (itemType === 'manga') {
-                if (myMangaList.includes(id)) {
-                    setMyMangaList(myMangaList.filter(item => item !== id));
-                    if (isLoggedIn) {
-                        try {
-                            await apiService.updateMALListStatus(id, 'dropped', 'manga');
-                        } catch (e) {
-                            console.error("Live MAL unsync failed:", e);
-                        }
-                    }
-                } else {
-                    setMyMangaList([...myMangaList, id]);
-                    if (isLoggedIn) {
-                        try {
-                            await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga');
-                        } catch (e) {
-                            console.error("Live MAL sync failed:", e);
-                        }
+            if (myList.includes(id)) {
+                setMyList(myList.filter(item => item !== id));
+                if (isLoggedIn) {
+                    try {
+                        await apiService.updateMALListStatus(id, 'dropped', itemType);
+                    } catch (e) {
+                        console.error("Live MAL unsync failed:", e);
                     }
                 }
             } else {
-                if (myList.includes(id)) {
-                    setMyList(myList.filter(item => item !== id));
-                    if (isLoggedIn) {
-                        try {
-                            await apiService.updateMALListStatus(id, 'dropped', 'anime');
-                        } catch (e) {
-                            console.error("Live MAL unsync failed:", e);
-                        }
-                    }
-                } else {
-                    setMyList([...myList, id]);
-                    if (isLoggedIn) {
-                        try {
-                            await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime');
-                        } catch (e) {
-                            console.error("Live MAL sync failed:", e);
-                        }
+                setMyList([...myList, id]);
+                if (isLoggedIn) {
+                    try {
+                        await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
+                    } catch (e) {
+                        console.error("Live MAL sync failed:", e);
                     }
                 }
             }
@@ -141,7 +111,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                     username={username}
                     onLoginClick={() => setShowLoginModal(true)}
                     onLogout={handleLogout}
-                    bookmarkCount={myList.length + myMangaList.length}
+                    bookmarkCount={myList.length}
                 />
 
                 <main className="flex-grow">
@@ -152,7 +122,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                             window.location.href = 'index.php?tab=' + (mediaType === 'manga' ? 'manga' : 'home');
                         }}
                         toggleBookmark={toggleBookmark}
-                        myList={mediaType === 'manga' ? myMangaList : myList}
+                        myList={myList}
                     />
                 </main>
 

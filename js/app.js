@@ -18,7 +18,7 @@ window.App = function App() {
     // Navigation & Primary state
     const [activeTab, setActiveTab] = useState("home"); // 'home' | 'anime' | 'movies' | 'mylist'
     const [searchQuery, setSearchQuery] = useState("");
-    
+
     // Modals & Authentication
     const handleAnimeSelect = (anime) => {
         const type = (anime.type && ['Manga', 'Novel', 'Lightnovel', 'Oneshot', 'Doujin', 'Manhwa', 'Manhua'].includes(anime.type)) || anime.chapters !== undefined ? 'manga' : 'anime';
@@ -47,63 +47,36 @@ window.App = function App() {
         const saved = localStorage.getItem("anilogue_mylist_live");
         return saved ? JSON.parse(saved) : [];
     });
-    const [myMangaList, setMyMangaList] = useState(() => {
-        const saved = localStorage.getItem("anilogue_mymangalist_live");
-        return saved ? JSON.parse(saved) : [];
-    });
 
-    // Bookmarked detailed objects loaded from API as needed
+    // Bookmarked Anime detailed objects loaded from API as needed
     const [myListDetails, setMyListDetails] = useState([]);
-    const [myMangaListDetails, setMyMangaListDetails] = useState([]);
     const [mylistLoading, setMylistLoading] = useState(false);
 
     useEffect(() => {
         localStorage.setItem("anilogue_mylist_live", JSON.stringify(myList));
     }, [myList]);
 
+    // Fetch watchlist details dynamically when myList changes or tab changes to mylist
     useEffect(() => {
-        localStorage.setItem("anilogue_mymangalist_live", JSON.stringify(myMangaList));
-    }, [myMangaList]);
+        if (activeTab !== "mylist" || myList.length === 0) return;
 
-    // Fetch watchlist details dynamically when lists change or tab changes to mylist
-    useEffect(() => {
-        if (activeTab !== "mylist") return;
-        
         let isMounted = true;
         async function fetchWatchlist() {
             setMylistLoading(true);
             try {
-                const animeDetails = [];
-                if (myList.length > 0) {
-                    for (const id of myList) {
-                        try {
-                            const item = await apiService.getAnimeDetails(id);
-                            if (item && !item.isUnconfigured) {
-                                animeDetails.push(item);
-                            }
-                        } catch (e) {
-                            console.error(`Error loading detail for bookmark ${id}:`, e);
+                const details = [];
+                for (const id of myList) {
+                    try {
+                        const item = await apiService.getAnimeDetails(id);
+                        if (item && !item.isUnconfigured) {
+                            details.push(item);
                         }
+                    } catch (e) {
+                        console.error(`Error loading detail for bookmark ${id}:`, e);
                     }
                 }
-                
-                const mangaDetails = [];
-                if (myMangaList.length > 0) {
-                    for (const id of myMangaList) {
-                        try {
-                            const item = await apiService.getMangaDetails(id);
-                            if (item && !item.isUnconfigured) {
-                                mangaDetails.push(item);
-                            }
-                        } catch (e) {
-                            console.error(`Error loading detail for bookmark ${id}:`, e);
-                        }
-                    }
-                }
-
                 if (isMounted) {
-                    setMyListDetails(animeDetails);
-                    setMyMangaListDetails(mangaDetails);
+                    setMyListDetails(details);
                 }
             } catch (err) {
                 console.error("Error updating watchlist:", err);
@@ -116,7 +89,7 @@ window.App = function App() {
 
         fetchWatchlist();
         return () => { isMounted = false; };
-    }, [myList, myMangaList, activeTab]);
+    }, [myList, activeTab]);
 
     // Fetch initial homepage categories
     useEffect(() => {
@@ -167,7 +140,7 @@ window.App = function App() {
                         setPopularAnime(popular || []);
                         setMoviesAnime(movies || []);
                         setPopularManga(topManga || []);
-                        
+
                         // Select top 3 popular anime to showcase in the Hero Banner carousel
                         if (popular && popular.length > 0) {
                             setFeaturedAnime(popular.slice(0, 3));
@@ -222,44 +195,22 @@ window.App = function App() {
 
     // Add or remove bookmark
     const toggleBookmark = async (id, itemType = 'anime') => {
-        if (itemType === 'manga') {
-            if (myMangaList.includes(id)) {
-                setMyMangaList(myMangaList.filter(item => item !== id));
-                if (isLoggedIn) {
-                    try {
-                        await apiService.updateMALListStatus(id, 'dropped', 'manga');
-                    } catch (e) {
-                        console.error("Live MAL unsync failed:", e);
-                    }
-                }
-            } else {
-                setMyMangaList([...myMangaList, id]);
-                if (isLoggedIn) {
-                    try {
-                        await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga');
-                    } catch (e) {
-                        console.error("Live MAL sync failed:", e);
-                    }
+        if (myList.includes(id)) {
+            setMyList(myList.filter(item => item !== id));
+            if (isLoggedIn) {
+                try {
+                    await apiService.updateMALListStatus(id, 'dropped', itemType);
+                } catch (e) {
+                    console.error("Live MAL unsync failed:", e);
                 }
             }
         } else {
-            if (myList.includes(id)) {
-                setMyList(myList.filter(item => item !== id));
-                if (isLoggedIn) {
-                    try {
-                        await apiService.updateMALListStatus(id, 'dropped', 'anime');
-                    } catch (e) {
-                        console.error("Live MAL unsync failed:", e);
-                    }
-                }
-            } else {
-                setMyList([...myList, id]);
-                if (isLoggedIn) {
-                    try {
-                        await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime');
-                    } catch (e) {
-                        console.error("Live MAL sync failed:", e);
-                    }
+            setMyList([...myList, id]);
+            if (isLoggedIn) {
+                try {
+                    await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
+                } catch (e) {
+                    console.error("Live MAL sync failed:", e);
                 }
             }
         }
@@ -303,15 +254,15 @@ window.App = function App() {
                         </div>
 
                         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <button 
+                            <button
                                 onClick={() => window.location.reload()}
                                 className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md hover:from-purple-500 hover:to-purple-700 active:scale-95 transition-all shadow-neon-purple shadow-animePurple/20 cursor-pointer"
                             >
                                 RELOAD SYSTEM
                             </button>
-                            <a 
-                                href="https://myanimelist.net/apiconfig" 
-                                target="_blank" 
+                            <a
+                                href="https://myanimelist.net/apiconfig"
+                                target="_blank"
                                 rel="noopener"
                                 className="w-full sm:w-auto px-6 py-3.5 bg-darkBg border border-animePurple/30 text-animePurple-light hover:border-animePurple font-orbitron font-bold text-xs tracking-widest rounded-md text-center cursor-pointer transition-all"
                             >
@@ -330,18 +281,18 @@ window.App = function App() {
 
     return (
         <div className="relative min-h-screen pb-16 flex flex-col justify-between">
-            
+
             {/* Header Top Nav */}
-            <Navbar 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab} 
+            <Navbar
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 isLoggedIn={isLoggedIn}
                 username={username}
                 onLoginClick={() => setShowLoginModal(true)}
                 onLogout={handleLogout}
-                bookmarkCount={myList.length + myMangaList.length}
+                bookmarkCount={myList.length}
             />
 
             {/* Dynamic Page Views */}
@@ -369,9 +320,9 @@ window.App = function App() {
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
                                 {searchResults.map(anime => (
-                                    <AnimeCard 
-                                        key={anime.id} 
-                                        anime={anime} 
+                                    <AnimeCard
+                                        key={anime.id}
+                                        anime={anime}
                                         onCardClick={handleAnimeSelect}
                                         toggleBookmark={toggleBookmark}
                                         myList={myList}
@@ -398,18 +349,18 @@ window.App = function App() {
                                     </div>
                                 ) : (
                                     <>
-                                        <HeroBanner 
+                                        <HeroBanner
                                             featuredList={featuredAnime}
-                                            onCardClick={handleAnimeSelect} 
+                                            onCardClick={handleAnimeSelect}
                                             toggleBookmark={toggleBookmark}
                                             myList={myList}
                                         />
-                                        
+
                                         {/* Slider Rows */}
                                         <div className="space-y-12 py-10 px-4 md:px-12 relative z-10 -mt-16 md:-mt-24">
-                                            
-                                            <AnimeSliderRow 
-                                                title="Currently Airing" 
+
+                                            <AnimeSliderRow
+                                                title="Currently Airing"
                                                 subtitle="Top trending simulcasts broadcasting now"
                                                 badgeText="LIVE"
                                                 animeList={airingAnime}
@@ -418,8 +369,8 @@ window.App = function App() {
                                                 myList={myList}
                                             />
 
-                                            <AnimeSliderRow 
-                                                title="Top Ranked Anime" 
+                                            <AnimeSliderRow
+                                                title="Top Ranked Anime"
                                                 subtitle="Highest rated series of all time"
                                                 animeList={popularAnime}
                                                 onCardClick={handleAnimeSelect}
@@ -427,8 +378,8 @@ window.App = function App() {
                                                 myList={myList}
                                             />
 
-                                            <AnimeSliderRow 
-                                                title="Top Ranked Manga" 
+                                            <AnimeSliderRow
+                                                title="Top Ranked Manga"
                                                 subtitle="Highest rated manga of all time"
                                                 animeList={popularManga}
                                                 onCardClick={handleAnimeSelect}
@@ -436,14 +387,14 @@ window.App = function App() {
                                                 myList={myList}
                                             />
 
-                                            <CategoryTabCatalog 
+                                            <CategoryTabCatalog
                                                 onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
 
-                                            <AnimeSliderRow 
-                                                title="Cinematic Anime Movies" 
+                                            <AnimeSliderRow
+                                                title="Cinematic Anime Movies"
                                                 subtitle="Breathtaking feature length visuals"
                                                 animeList={moviesAnime}
                                                 onCardClick={handleAnimeSelect}
@@ -473,9 +424,9 @@ window.App = function App() {
                                 ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
                                         {popularAnime.map(anime => (
-                                            <AnimeCard 
-                                                key={anime.id} 
-                                                anime={anime} 
+                                            <AnimeCard
+                                                key={anime.id}
+                                                anime={anime}
                                                 onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
@@ -502,9 +453,9 @@ window.App = function App() {
                                 ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
                                         {popularManga.map(manga => (
-                                            <AnimeCard 
-                                                key={manga.id} 
-                                                anime={manga} 
+                                            <AnimeCard
+                                                key={manga.id}
+                                                anime={manga}
                                                 onCardClick={handleAnimeSelect}
                                                 toggleBookmark={(id) => toggleBookmark(id, 'manga')}
                                                 myList={myList}
@@ -531,9 +482,9 @@ window.App = function App() {
                                 ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
                                         {moviesAnime.map(anime => (
-                                            <AnimeCard 
-                                                key={anime.id} 
-                                                anime={anime} 
+                                            <AnimeCard
+                                                key={anime.id}
+                                                anime={anime}
                                                 onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
@@ -545,22 +496,22 @@ window.App = function App() {
                         )}
 
                         {activeTab === "mylist" && (
-                            <section className="max-w-[1400px] mx-auto px-4 md:px-8 pt-32 pb-16 min-h-[70vh] space-y-12">
-                                <div className="text-left space-y-6 border-b border-animePurple/25 pb-6">
+                            <section className="max-w-[1400px] mx-auto px-4 md:px-8 pt-32 pb-16 min-h-[70vh]">
+                                <div className="text-left space-y-6 mb-8 border-b border-animePurple/25 pb-6">
                                     <h2 className="font-orbitron font-extrabold text-2xl sm:text-3xl text-white uppercase tracking-wider neon-text-purple">
-                                        My Bookmarks
+                                        My List (Bookmarks)
                                     </h2>
                                     <p className="text-xs text-gray-400 font-medium">Your customized watchlists synced to storage</p>
                                 </div>
 
-                                {myList.length === 0 && myMangaList.length === 0 ? (
+                                {myList.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-24 text-gray-500 space-y-4">
                                         <div className="w-16 h-16 rounded-full bg-darkCard flex items-center justify-center border border-animePurple/20 text-animePurple shadow-neon-purple shadow-animePurple/10">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
                                         </div>
-                                        <div className="space-y-1 text-center">
+                                        <div className="space-y-1">
                                             <span className="text-base font-bold font-orbitron tracking-widest text-white block">YOUR WATCHLIST IS EMPTY</span>
-                                            <span className="text-xs block">Explore home page rows, hover anime or manga posters, and tap '+' to fill your bookmarks.</span>
+                                            <span className="text-xs block">Explore home page rows, hover anime posters, and tap '+' to fill your bookmarks list.</span>
                                         </div>
                                     </div>
                                 ) : mylistLoading ? (
@@ -568,46 +519,16 @@ window.App = function App() {
                                         <div className="w-12 h-12 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-12">
-                                        {/* Anime Watchlist */}
-                                        {myList.length > 0 && (
-                                            <div className="space-y-6">
-                                                <h3 className="font-orbitron font-black text-lg text-white uppercase tracking-wider border-l-4 border-animePurple pl-3">
-                                                    Anime Watchlist ({myList.length})
-                                                </h3>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
-                                                    {myListDetails.map(anime => (
-                                                        <AnimeCard 
-                                                            key={anime.id} 
-                                                            anime={anime} 
-                                                            onCardClick={handleAnimeSelect}
-                                                            toggleBookmark={(id) => toggleBookmark(id, 'anime')}
-                                                            myList={myList}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Manga Watchlist */}
-                                        {myMangaList.length > 0 && (
-                                            <div className="space-y-6">
-                                                <h3 className="font-orbitron font-black text-lg text-white uppercase tracking-wider border-l-4 border-animeYellow pl-3">
-                                                    Manga Watchlist ({myMangaList.length})
-                                                </h3>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
-                                                    {myMangaListDetails.map(manga => (
-                                                        <AnimeCard 
-                                                            key={manga.id} 
-                                                            anime={manga} 
-                                                            onCardClick={handleAnimeSelect}
-                                                            toggleBookmark={(id) => toggleBookmark(id, 'manga')}
-                                                            myList={myMangaList}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
+                                        {myListDetails.map(anime => (
+                                            <AnimeCard
+                                                key={anime.id}
+                                                anime={anime}
+                                                onCardClick={handleAnimeSelect}
+                                                toggleBookmark={toggleBookmark}
+                                                myList={myList}
+                                            />
+                                        ))}
                                     </div>
                                 )}
                             </section>
@@ -620,7 +541,7 @@ window.App = function App() {
 
             {/* Glassmorphic Account Login Modal */}
             {showLoginModal && (
-                <LoginModal 
+                <LoginModal
                     onClose={() => setShowLoginModal(false)}
                     onLoginSuccess={(user) => {
                         setIsLoggedIn(true);

@@ -28,40 +28,9 @@ $listFields = 'id,title,main_picture,mean,synopsis,genres,num_episodes,start_sea
 // Detailed fields explicitly requested by the user's details cURL
 $detailFields = 'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
 
-// Manga Fields
-$mangaListFields = 'id,title,main_picture,mean,synopsis,genres,num_volumes,num_chapters,media_type,status,rank,popularity';
-$mangaDetailFields = 'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_volumes,num_chapters,authors{first_name,last_name},pictures,background,related_anime,related_manga,recommendations,serialization{name}';
+
 
 switch ($action) {
-    case 'manga_search':
-        $query = isset($_GET['q']) ? $_GET['q'] : '';
-        if (empty($query)) {
-            echo json_encode(['error' => 'Query parameter "q" is required.']);
-            exit;
-        }
-        $url = MAL_API_URL . '/manga?q=' . urlencode($query) . '&limit=20&fields=' . $mangaListFields;
-        fetchAndMapMangaList($url);
-        break;
-
-    case 'manga_ranking':
-        $type = isset($_GET['type']) ? $_GET['type'] : 'all';
-        $allowedTypes = ['all', 'manga', 'novels', 'lightnovels', 'oneshots', 'doujin', 'manhwa', 'manhua', 'bypopularity', 'favorite'];
-        if (!in_array($type, $allowedTypes)) {
-            $type = 'all';
-        }
-        $url = MAL_API_URL . '/manga/ranking?ranking_type=' . $type . '&limit=20&fields=' . $mangaListFields;
-        fetchAndMapMangaList($url);
-        break;
-
-    case 'manga_detail':
-        $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-        if ($id <= 0) {
-            echo json_encode(['error' => 'Valid manga "id" parameter is required.']);
-            exit;
-        }
-        $url = MAL_API_URL . '/manga/' . $id . '?fields=' . $mangaDetailFields;
-        fetchAndMapMangaDetail($url);
-        break;
     case 'search':
         $query = isset($_GET['q']) ? $_GET['q'] : '';
         if (empty($query)) {
@@ -140,14 +109,13 @@ switch ($action) {
         }
         $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
         $status = isset($_POST['status']) ? $_POST['status'] : 'plan_to_watch'; // 'watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'
-        $type = isset($_POST['type']) ? $_POST['type'] : 'anime';
         
         if ($id <= 0) {
-            echo json_encode(['error' => 'Valid id is required.']);
+            echo json_encode(['error' => 'Valid anime id is required.']);
             exit;
         }
         
-        $url = MAL_API_URL . '/' . ($type === 'manga' ? 'manga' : 'anime') . '/' . $id . '/my_list_status';
+        $url = MAL_API_URL . '/anime/' . $id . '/my_list_status';
         $postFields = [
             'status' => $status
         ];
@@ -403,161 +371,5 @@ function translateMALAnimeSchema($anime) {
     ];
 }
 
-/**
- * Fetch a list of manga from MAL, map it to the frontend schema, and echo JSON.
- */
-function fetchAndMapMangaList($url) {
-    $rawData = makeMALRequest($url);
-    
-    if (isset($rawData['error'])) {
-        echo json_encode($rawData);
-        exit;
-    }
 
-    $items = [];
-    $dataNodes = isset($rawData['data']) ? $rawData['data'] : [];
-    
-    foreach ($dataNodes as $node) {
-        $manga = isset($node['node']) ? $node['node'] : $node;
-        $items[] = translateMALMangaSchema($manga);
-    }
-
-    echo json_encode($items);
-}
-
-/**
- * Fetch a specific manga detail from MAL, map it, and echo JSON.
- */
-function fetchAndMapMangaDetail($url) {
-    $rawData = makeMALRequest($url);
-    
-    if (isset($rawData['error'])) {
-        echo json_encode($rawData);
-        exit;
-    }
-
-    $mapped = translateMALMangaSchema($rawData);
-    
-    // Process pictures gallery
-    if (isset($rawData['pictures'])) {
-        $mapped['pictures'] = array_map(function($pic) {
-            return isset($pic['large']) ? $pic['large'] : $pic['medium'];
-        }, $rawData['pictures']);
-        
-        if (count($mapped['pictures']) > 1) {
-            $mapped['banner'] = $mapped['pictures'][1];
-        }
-    }
-    
-    // Process related/recommendations arrays
-    if (isset($rawData['recommendations'])) {
-        $mapped['recommendations'] = array_slice(array_map(function($rec) {
-            return translateMALMangaSchema($rec['node']);
-        }, $rawData['recommendations']), 0, 6);
-    }
-
-    echo json_encode($mapped);
-}
-
-/**
- * Map a single MyAnimeList API manga item object to the frontend expected properties.
- */
-function translateMALMangaSchema($manga) {
-    $id = isset($manga['id']) ? $manga['id'] : 0;
-    
-    // Cover mapping
-    $cover = '';
-    if (isset($manga['main_picture'])) {
-        $cover = isset($manga['main_picture']['large']) ? $manga['main_picture']['large'] : $manga['main_picture']['medium'];
-    }
-    
-    // Format release year
-    $year = 2026;
-    if (isset($manga['start_date'])) {
-        $year = intval(substr($manga['start_date'], 0, 4));
-    }
-    
-    // Translate Genres objects
-    $genres = [];
-    if (isset($manga['genres'])) {
-        foreach ($manga['genres'] as $g) {
-            $genres[] = $g['name'];
-        }
-    }
-    if (empty($genres)) {
-        $genres = ['Manga'];
-    }
-    
-    // Format Mean score rating
-    $rating = '7.8';
-    if (isset($manga['mean']) && $manga['mean'] > 0) {
-        $rating = number_format($manga['mean'], 1);
-    }
-
-    // Media type translation
-    $mediaType = isset($manga['media_type']) ? $manga['media_type'] : 'manga';
-    $type = ucwords($mediaType);
-    
-    $status = isset($manga['status']) ? ucwords(str_replace('_', ' ', $manga['status'])) : 'Publishing';
-
-    // Parse rich detail specifications fields
-    $rank = isset($manga['rank']) ? intval($manga['rank']) : 'N/A';
-    $popularity = isset($manga['popularity']) ? intval($manga['popularity']) : 'N/A';
-    $members = isset($manga['num_list_users']) ? number_format($manga['num_list_users']) : 'N/A';
-    $scorers = isset($manga['num_scoring_users']) ? number_format($manga['num_scoring_users']) : 'N/A';
-    
-    // Chapters / Volumes
-    $chapters = isset($manga['num_chapters']) && $manga['num_chapters'] > 0 ? $manga['num_chapters'] : 'N/A';
-    $volumes = isset($manga['num_volumes']) && $manga['num_volumes'] > 0 ? $manga['num_volumes'] : 'N/A';
-    
-    // Authors formatting: MAL returns array of {node => {id, first_name, last_name}, role}
-    $authorsList = [];
-    if (isset($manga['authors'])) {
-        foreach ($manga['authors'] as $author) {
-            if (isset($author['node'])) {
-                $node = $author['node'];
-                $fullName = trim((isset($node['first_name']) ? $node['first_name'] : '') . ' ' . (isset($node['last_name']) ? $node['last_name'] : ''));
-                if (!empty($fullName)) {
-                    $authorsList[] = $fullName . ' (' . str_replace('_', ' ', $author['role']) . ')';
-                }
-            }
-        }
-    }
-    $authorsStr = count($authorsList) > 0 ? implode(', ', $authorsList) : 'Unknown Author';
-
-    // Serialization publishing details
-    $serialization = 'N/A';
-    if (isset($manga['serialization']) && count($manga['serialization']) > 0) {
-        $serialization = $manga['serialization'][0]['name'];
-    }
-
-    $ageRating = isset($manga['nsfw']) && $manga['nsfw'] === 'white' ? 'R18+' : 'All Ages';
-    $background = isset($manga['background']) ? $manga['background'] : '';
-
-    return [
-        'id' => $id,
-        'title' => $manga['title'],
-        'type' => $type,
-        'chapters' => $chapters,
-        'volumes' => $volumes,
-        'year' => $year,
-        'rating' => $rating,
-        'synopsis' => isset($manga['synopsis']) ? $manga['synopsis'] : 'No description details available from MyAnimeList.',
-        'genres' => $genres,
-        'cover' => $cover,
-        'banner' => $cover,
-        'popular' => isset($manga['mean']) && $manga['mean'] >= 8.0,
-        'category' => count($genres) > 0 ? $genres[0] : 'Action',
-        
-        // Custom Manga Metadata Profile properties
-        'rank' => $rank,
-        'popularity' => $popularity,
-        'members' => $members,
-        'scorers' => $scorers,
-        'authors' => $authorsStr,
-        'serialization' => $serialization,
-        'ageRating' => $ageRating,
-        'background' => $background
-    ];
-}
 

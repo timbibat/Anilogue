@@ -4,6 +4,7 @@
  */
 
 const PROXY_URL = 'api/anime.php';
+const MANGA_PROXY_URL = 'api/manga.php';
 
 /**
  * Helper to process response and handle unconfigured API credential states
@@ -91,12 +92,13 @@ async function getCurrentUser() {
  */
 async function updateMALListStatus(id, status = 'plan_to_watch', type = 'anime') {
     try {
-        const response = await fetch(`${PROXY_URL}?action=update_status`, {
+        const proxy = type === 'manga' ? MANGA_PROXY_URL : PROXY_URL;
+        const response = await fetch(`${proxy}?action=update_status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: `id=${id}&status=${status}&type=${type}`
+            body: `id=${id}&status=${status}`
         });
         if (!response.ok) {
             throw new Error(`HTTP status error: ${response.status}`);
@@ -122,13 +124,13 @@ window.apiService = {
     // Manga API Section
     searchManga: async function(query) {
         if (!query || query.trim() === '') return [];
-        return await fetchFromProxy(`${PROXY_URL}?action=manga_search&q=${encodeURIComponent(query)}`);
+        return await fetchFromProxy(`${MANGA_PROXY_URL}?action=manga_search&q=${encodeURIComponent(query)}`);
     },
     getMangaRanking: async function(type = 'all') {
-        return await fetchFromProxy(`${PROXY_URL}?action=manga_ranking&type=${type}`);
+        return await fetchFromProxy(`${MANGA_PROXY_URL}?action=manga_ranking&type=${type}`);
     },
     getMangaDetails: async function(id) {
         if (!id) throw new Error('Manga ID is required.');
-        return await fetchFromProxy(`${PROXY_URL}?action=manga_detail&id=${id}`);
+        return await fetchFromProxy(`${MANGA_PROXY_URL}?action=manga_detail&id=${id}`);
     }
 };
