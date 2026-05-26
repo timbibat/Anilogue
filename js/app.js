@@ -27,6 +27,7 @@ window.App = function App() {
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState("");
+    const [userPicture, setUserPicture] = useState("");
 
     // Live API Lists state
     const [airingAnime, setAiringAnime] = useState([]);
@@ -112,6 +113,7 @@ window.App = function App() {
                 if (isMounted && user && user.isLoggedIn) {
                     setIsLoggedIn(true);
                     setUsername(user.username);
+                    setUserPicture(user.picture || "");
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
@@ -199,7 +201,7 @@ window.App = function App() {
             setMyList(myList.filter(item => item !== id));
             if (isLoggedIn) {
                 try {
-                    await apiService.updateMALListStatus(id, 'dropped', itemType);
+                    await apiService.deleteMALListItem(id, itemType);
                 } catch (e) {
                     console.error("Live MAL unsync failed:", e);
                 }
@@ -290,6 +292,7 @@ window.App = function App() {
                 setSearchQuery={setSearchQuery}
                 isLoggedIn={isLoggedIn}
                 username={username}
+                userPicture={userPicture}
                 onLoginClick={() => setShowLoginModal(true)}
                 onLogout={handleLogout}
                 bookmarkCount={myList.length}

@@ -5,6 +5,9 @@
  * appends OAuth2 Bearer Token headers, and handles comprehensive field mappings.
  */
 
+error_reporting(0);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET');
@@ -89,16 +92,16 @@ switch ($action) {
             echo json_encode(['isLoggedIn' => false]);
             exit;
         }
-        $url = MAL_API_URL . '/users/@me';
+        $url = MAL_API_URL . '/users/@me?fields=anime_statistics,time_zone,is_supporter';
         $userData = makeMALRequest($url);
         if (isset($userData['error'])) {
             echo json_encode(['isLoggedIn' => false, 'error' => $userData['error']]);
         } else {
-            echo json_encode([
+            echo json_encode(array_merge([
                 'isLoggedIn' => true,
                 'username' => isset($userData['name']) ? $userData['name'] : 'MAL Guest',
                 'picture' => isset($userData['picture']) ? $userData['picture'] : ''
-            ]);
+            ], $userData));
         }
         exit;
 
@@ -119,6 +122,12 @@ switch ($action) {
         $postFields = [
             'status' => $status
         ];
+        if (isset($_POST['score'])) {
+            $postFields['score'] = intval($_POST['score']);
+        }
+        if (isset($_POST['num_watched_episodes'])) {
+            $postFields['num_watched_episodes'] = intval($_POST['num_watched_episodes']);
+        }
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -143,6 +152,47 @@ switch ($action) {
         } else {
             echo json_encode([
                 'error' => 'Failed to update MAL list status.',
+                'http_code' => $httpCode,
+                'response' => json_decode($response, true)
+            ]);
+        }
+        exit;
+
+    case 'delete_status':
+        if (!isOauthAuthenticated()) {
+            echo json_encode(['error' => 'You must be logged in via MyAnimeList to sync watchlists.']);
+            exit;
+        }
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        
+        if ($id <= 0) {
+            echo json_encode(['error' => 'Valid anime id is required.']);
+            exit;
+        }
+        
+        $url = MAL_API_URL . '/anime/' . $id . '/my_list_status';
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $headers = [
+            'Authorization: Bearer ' . getOauthAccessToken(),
+        ];
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200 || $httpCode === 204) {
+            echo json_encode(['status' => 'deleted', 'message' => 'Anime removed from your MyAnimeList successfully.']);
+        } else {
+            echo json_encode([
+                'error' => 'Failed to delete MAL list item.',
                 'http_code' => $httpCode,
                 'response' => json_decode($response, true)
             ]);
@@ -367,6 +417,7 @@ function translateMALAnimeSchema($anime) {
         'source' => $source,
         'duration' => $duration,
         'ageRating' => $ageRating,
+        'my_list_status' => isset($anime['my_list_status']) ? $anime['my_list_status'] : null,
         'background' => $background
     ];
 }

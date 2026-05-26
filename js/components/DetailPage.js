@@ -18,10 +18,17 @@ const ArrowLeftIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
 );
 
-window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList, type = "anime" }) {
+window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList, type = "anime", isLoggedIn = false }) {
     const [activeTab, setActiveTab] = useState("specifications"); // 'specifications' | 'synopsis'
     const [detailedAnime, setDetailedAnime] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Watchlist synchronizer state bindings
+    const [malStatus, setMalStatus] = useState("plan_to_watch");
+    const [malProgress, setMalProgress] = useState(0);
+    const [malVolsProgress, setMalVolsProgress] = useState(0); // Manga only
+    const [malScore, setMalScore] = useState(0);
+    const [isUpdatingMAL, setIsUpdatingMAL] = useState(false);
 
     const isBookmarked = myList.includes(anime.id);
 
@@ -63,6 +70,92 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
     }, [anime]);
 
     const currentAnime = detailedAnime || anime;
+
+    // Synchronize form bindings with loaded detailed item my_list_status
+    useEffect(() => {
+        if (currentAnime && currentAnime.my_list_status) {
+            const ls = currentAnime.my_list_status;
+            if (ls.status) setMalStatus(ls.status);
+            if (type === "manga") {
+                if (ls.num_chapters_read !== undefined) setMalProgress(ls.num_chapters_read);
+                if (ls.num_volumes_read !== undefined) setMalVolsProgress(ls.num_volumes_read);
+            } else {
+                if (ls.num_episodes_watched !== undefined) setMalProgress(ls.num_episodes_watched);
+            }
+            if (ls.score !== undefined) setMalScore(ls.score);
+        } else {
+            // Default statuses depending on type
+            setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
+            setMalProgress(0);
+            setMalVolsProgress(0);
+            setMalScore(0);
+        }
+    }, [detailedAnime, type]);
+
+    const handleMALSync = async () => {
+        setIsUpdatingMAL(true);
+        try {
+            const extraFields = {
+                score: malScore
+            };
+            if (type === "manga") {
+                extraFields.num_chapters_read = malProgress;
+                extraFields.num_volumes_read = malVolsProgress;
+            } else {
+                extraFields.num_watched_episodes = malProgress;
+            }
+            const res = await apiService.updateMALListStatus(currentAnime.id, malStatus, type, extraFields);
+            if (res && !res.error) {
+                // Update local detailed state
+                setDetailedAnime(prev => ({
+                    ...prev,
+                    my_list_status: res
+                }));
+                // Make sure it is locally bookmarked too!
+                if (!isBookmarked) {
+                    toggleBookmark(currentAnime.id, type);
+                }
+                alert("Successfully synchronized status to MyAnimeList!");
+            } else {
+                alert("Error synchronizing status: " + (res ? res.error : "Unknown error"));
+            }
+        } catch (e) {
+            console.error("Failed to sync to MAL:", e);
+            alert("Connection error synchronizing to MyAnimeList.");
+        } finally {
+            setIsUpdatingMAL(false);
+        }
+    };
+
+    const handleMALDelete = async () => {
+        if (!confirm("Are you sure you want to remove this from your MyAnimeList watchlist entirely?")) return;
+        setIsUpdatingMAL(true);
+        try {
+            const res = await apiService.deleteMALListItem(currentAnime.id, type);
+            if (res && !res.error) {
+                setDetailedAnime(prev => ({
+                    ...prev,
+                    my_list_status: null
+                }));
+                if (isBookmarked) {
+                    toggleBookmark(currentAnime.id, type);
+                }
+                // Reset form values to default
+                setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
+                setMalProgress(0);
+                setMalVolsProgress(0);
+                setMalScore(0);
+                alert("Removed from MyAnimeList successfully!");
+            } else {
+                alert("Error removing from MyAnimeList: " + (res ? res.error : "Unknown error"));
+            }
+        } catch (e) {
+            console.error("Failed to delete from MAL:", e);
+            alert("Connection error removing from MyAnimeList.");
+        } finally {
+            setIsUpdatingMAL(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -148,23 +241,175 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                         </div>
 
                         {/* Direct Interactions Panel */}
-                        <div className="w-64 lg:w-full space-y-3">
-                            <button 
-                                onClick={() => toggleBookmark(currentAnime.id, type)}
-                                className={`w-full py-3.5 rounded font-orbitron font-bold text-xs tracking-wider border flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer ${isBookmarked ? 'bg-animeYellow/10 border-animeYellow text-animeYellow' : 'bg-animePurple border-animePurple hover:bg-animePurple/85 text-white hover:border-animePurple shadow-lg shadow-animePurple/20'}`}
-                            >
-                                {isBookmarked ? (
-                                    <>
-                                        <CheckIcon />
-                                        <span>IN WATCHLIST</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <PlusIcon />
-                                        <span>ADD TO MY WATCHLIST</span>
-                                    </>
-                                )}
-                            </button>
+                        <div className="w-64 lg:w-full space-y-4">
+                            {/* Premium MAL Live Synchronizer Panel */}
+                            {isLoggedIn ? (
+                                <div className="w-full bg-[#121212] border border-gray-800 rounded-lg p-5 shadow-2xl space-y-4 text-xs font-sans text-white select-none">
+                                    {/* Underlined Header Title */}
+                                    <div className="text-left font-bold text-sm pb-1 mb-2 border-b border-[#2e51a2] text-white tracking-wide">
+                                        Add to List
+                                    </div>
+                                    
+                                    {/* Red warning note */}
+                                    <div className="text-[11px] text-[#ff4d4d] font-semibold">
+                                        * Your list is public by default.
+                                    </div>
+                                    
+                                    {/* Form Fields Aligned horizontally */}
+                                    <div className="space-y-3.5">
+                                        {/* Status Row */}
+                                        <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                            <label className="text-gray-300 font-bold text-right pr-2">Status:</label>
+                                            <div className="relative">
+                                                <select 
+                                                    value={malStatus} 
+                                                    onChange={(e) => setMalStatus(e.target.value)}
+                                                    className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none transition-colors appearance-none pr-8 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                >
+                                                    {type === "manga" ? (
+                                                        <>
+                                                            <option value="reading">Reading</option>
+                                                            <option value="completed">Completed</option>
+                                                            <option value="on_hold">On-Hold</option>
+                                                            <option value="dropped">Dropped</option>
+                                                            <option value="plan_to_read">Plan to Watch</option>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <option value="watching">Watching</option>
+                                                            <option value="completed">Completed</option>
+                                                            <option value="on_hold">On-Hold</option>
+                                                            <option value="dropped">Dropped</option>
+                                                            <option value="plan_to_watch">Plan to Watch</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress Row (Eps Seen or Chaps/Vols Seen) */}
+                                        {type === "manga" ? (
+                                            <>
+                                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                                    <label className="text-gray-300 font-bold text-right pr-2">Chaps Seen:</label>
+                                                    <div className="flex items-center space-x-2">
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" 
+                                                            max={currentAnime.chapters !== 'N/A' ? currentAnime.chapters : 9999}
+                                                            value={malProgress} 
+                                                            onChange={(e) => setMalProgress(parseInt(e.target.value) || 0)}
+                                                            className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-blue-500"
+                                                        />
+                                                        <span className="text-gray-400 font-bold">/ {currentAnime.chapters !== 'N/A' && currentAnime.chapters ? currentAnime.chapters : '??'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                                    <label className="text-gray-300 font-bold text-right pr-2">Vols Seen:</label>
+                                                    <div className="flex items-center space-x-2">
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" 
+                                                            max={currentAnime.volumes !== 'N/A' ? currentAnime.volumes : 999}
+                                                            value={malVolsProgress} 
+                                                            onChange={(e) => setMalVolsProgress(parseInt(e.target.value) || 0)}
+                                                            className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-blue-500"
+                                                        />
+                                                        <span className="text-gray-400 font-bold">/ {currentAnime.volumes !== 'N/A' && currentAnime.volumes ? currentAnime.volumes : '??'}</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                                <label className="text-gray-300 font-bold text-right pr-2">Eps Seen:</label>
+                                                <div className="flex items-center space-x-2">
+                                                    <input 
+                                                        type="number" 
+                                                        min="0" 
+                                                        max={currentAnime.episodes !== 'N/A' ? currentAnime.episodes : 999}
+                                                        value={malProgress} 
+                                                        onChange={(e) => setMalProgress(parseInt(e.target.value) || 0)}
+                                                        className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-blue-500"
+                                                    />
+                                                    <span className="text-gray-400 font-bold">/ {currentAnime.episodes !== 'N/A' && currentAnime.episodes ? currentAnime.episodes : '??'}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Your Score Row */}
+                                        <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                            <label className="text-gray-300 font-bold text-right pr-2">Your Score:</label>
+                                            <div className="relative">
+                                                <select 
+                                                    value={malScore} 
+                                                    onChange={(e) => setMalScore(parseInt(e.target.value) || 0)}
+                                                    className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none transition-colors appearance-none pr-8 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                >
+                                                    <option value="0">Select</option>
+                                                    <option value="10">10 (Masterpiece)</option>
+                                                    <option value="9">9 (Great)</option>
+                                                    <option value="8">8 (Very Good)</option>
+                                                    <option value="7">7 (Good)</option>
+                                                    <option value="6">6 (Fine)</option>
+                                                    <option value="5">5 (Average)</option>
+                                                    <option value="4">4 (Bad)</option>
+                                                    <option value="3">3 (Very Bad)</option>
+                                                    <option value="2">2 (Horrible)</option>
+                                                    <option value="1">1 (Appalling)</option>
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons Row */}
+                                    <div className="pt-2 flex items-center space-x-3 pl-[90px]">
+                                        <button 
+                                            onClick={handleMALSync}
+                                            disabled={isUpdatingMAL}
+                                            className="px-5 py-1.5 bg-[#2e51a2] text-white hover:bg-[#3b5ca9] font-bold text-xs rounded shadow-md transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-50"
+                                        >
+                                            {isUpdatingMAL ? 'Syncing...' : (currentAnime.my_list_status ? 'Save' : 'Add')}
+                                        </button>
+                                        
+                                        {currentAnime.my_list_status ? (
+                                            <button 
+                                                onClick={handleMALDelete}
+                                                disabled={isUpdatingMAL}
+                                                className="text-red-400 hover:text-red-300 font-semibold text-xs transition-colors cursor-pointer"
+                                            >
+                                                Remove
+                                            </button>
+                                        ) : (
+                                            <span className="text-[#2e51a2] hover:underline font-semibold text-xs cursor-pointer">
+                                                Add Detailed Info
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={() => toggleBookmark(currentAnime.id, type)}
+                                    className={`w-full py-3.5 rounded font-orbitron font-bold text-xs tracking-wider border flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer ${isBookmarked ? 'bg-animeYellow/10 border-animeYellow text-animeYellow' : 'bg-animePurple border-animePurple hover:bg-animePurple/85 text-white hover:border-animePurple shadow-lg shadow-animePurple/20'}`}
+                                >
+                                    {isBookmarked ? (
+                                        <>
+                                            <CheckIcon />
+                                            <span>IN WATCHLIST</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <PlusIcon />
+                                            <span>ADD TO MY WATCHLIST</span>
+                                        </>
+                                    )}
+                                </button>
+                            )}
 
                             <a 
                                 href={type === "manga" ? `https://myanimelist.net/manga/${currentAnime.id}` : `https://myanimelist.net/anime/${currentAnime.id}`} 

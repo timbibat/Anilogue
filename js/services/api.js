@@ -90,15 +90,21 @@ async function getCurrentUser() {
 /**
  * Update official user watchlist status on MAL live
  */
-async function updateMALListStatus(id, status = 'plan_to_watch', type = 'anime') {
+async function updateMALListStatus(id, status = 'plan_to_watch', type = 'anime', extraFields = {}) {
     try {
         const proxy = type === 'manga' ? MANGA_PROXY_URL : PROXY_URL;
+        let body = `id=${id}&status=${status}`;
+        for (const [key, val] of Object.entries(extraFields)) {
+            if (val !== undefined && val !== null && val !== '') {
+                body += `&${key}=${encodeURIComponent(val)}`;
+            }
+        }
         const response = await fetch(`${proxy}?action=update_status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: `id=${id}&status=${status}`
+            body: body
         });
         if (!response.ok) {
             throw new Error(`HTTP status error: ${response.status}`);
@@ -106,6 +112,29 @@ async function updateMALListStatus(id, status = 'plan_to_watch', type = 'anime')
         return await response.json();
     } catch (error) {
         console.error('Failed to update MAL status:', error);
+        throw error;
+    }
+}
+
+/**
+ * Delete an item from the official MyAnimeList watchlist entirely
+ */
+async function deleteMALListItem(id, type = 'anime') {
+    try {
+        const proxy = type === 'manga' ? MANGA_PROXY_URL : PROXY_URL;
+        const response = await fetch(`${proxy}?action=delete_status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `id=${id}`
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP status error: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to delete MAL status:', error);
         throw error;
     }
 }
@@ -120,6 +149,7 @@ window.apiService = {
     getAnimeByGenre,
     getCurrentUser,
     updateMALListStatus,
+    deleteMALListItem,
     
     // Manga API Section
     searchManga: async function(query) {

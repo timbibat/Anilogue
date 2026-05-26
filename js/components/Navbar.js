@@ -10,7 +10,7 @@ const CloseIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 );
 
-window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearchQuery, isLoggedIn, username, onLoginClick, onLogout, bookmarkCount }) {
+window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearchQuery, isLoggedIn, username, userPicture, onLoginClick, onLogout, bookmarkCount }) {
     const [scrolled, setScrolled] = useState(false);
     const [searchFocused, setSearchFocused] = useState(false);
 
@@ -113,7 +113,7 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                     {isLoggedIn ? (
                         <div className="flex items-center space-x-3 group relative cursor-pointer">
                             <div className="w-9 h-9 rounded-full ring-2 ring-animePurple overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=100&auto=format&fit=crop&q=80" alt="Avatar" className="w-full h-full object-cover" />
+                                <img src={userPicture || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=100&auto=format&fit=crop&q=80"} alt="Avatar" className="w-full h-full object-cover" />
                             </div>
                             <div className="hidden md:flex flex-col text-left">
                                 <span className="text-xs font-semibold text-white max-w-[80px] truncate">{username}</span>

@@ -5,6 +5,9 @@
  * appends OAuth2 Bearer Token headers, and handles comprehensive field mappings.
  */
 
+error_reporting(0);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST');
@@ -74,6 +77,15 @@ switch ($action) {
         $postFields = [
             'status' => $status
         ];
+        if (isset($_POST['score'])) {
+            $postFields['score'] = intval($_POST['score']);
+        }
+        if (isset($_POST['num_volumes_read'])) {
+            $postFields['num_volumes_read'] = intval($_POST['num_volumes_read']);
+        }
+        if (isset($_POST['num_chapters_read'])) {
+            $postFields['num_chapters_read'] = intval($_POST['num_chapters_read']);
+        }
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -98,6 +110,47 @@ switch ($action) {
         } else {
             echo json_encode([
                 'error' => 'Failed to update MAL list status.',
+                'http_code' => $httpCode,
+                'response' => json_decode($response, true)
+            ]);
+        }
+        break;
+
+    case 'delete_status':
+        if (!isOauthAuthenticated()) {
+            echo json_encode(['error' => 'You must be logged in via MyAnimeList to sync watchlists.']);
+            exit;
+        }
+        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        
+        if ($id <= 0) {
+            echo json_encode(['error' => 'Valid id is required.']);
+            exit;
+        }
+        
+        $url = MAL_API_URL . '/manga/' . $id . '/my_list_status';
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $headers = [
+            'Authorization: Bearer ' . getOauthAccessToken(),
+        ];
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200 || $httpCode === 204) {
+            echo json_encode(['status' => 'deleted', 'message' => 'Manga removed from your MyAnimeList successfully.']);
+        } else {
+            echo json_encode([
+                'error' => 'Failed to delete MAL list item.',
                 'http_code' => $httpCode,
                 'response' => json_decode($response, true)
             ]);
@@ -267,7 +320,7 @@ function translateMALMangaSchema($manga) {
 
     // Serialization publishing details
     $serialization = 'N/A';
-    if (isset($manga['serialization']) && count($manga['serialization']) > 0) {
+    if (isset($manga['serialization']) && count($manga['serialization']) > 0 && isset($manga['serialization'][0]['name'])) {
         $serialization = $manga['serialization'][0]['name'];
     }
 
@@ -297,6 +350,7 @@ function translateMALMangaSchema($manga) {
         'authors' => $authorsStr,
         'serialization' => $serialization,
         'ageRating' => $ageRating,
+        'my_list_status' => isset($manga['my_list_status']) ? $manga['my_list_status'] : null,
         'background' => $background
     ];
 }

@@ -38,14 +38,23 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
         const [showLoginModal, setShowLoginModal] = useState(false);
         const [isLoggedIn, setIsLoggedIn] = useState(false);
         const [username, setUsername] = useState("");
+        const [userPicture, setUserPicture] = useState("");
         const [myList, setMyList] = useState(() => {
             const saved = localStorage.getItem("anilogue_mylist_live");
+            return saved ? JSON.parse(saved) : [];
+        });
+        const [myMangaList, setMyMangaList] = useState(() => {
+            const saved = localStorage.getItem("anilogue_mymangalist_live");
             return saved ? JSON.parse(saved) : [];
         });
 
         useEffect(() => {
             localStorage.setItem("anilogue_mylist_live", JSON.stringify(myList));
         }, [myList]);
+
+        useEffect(() => {
+            localStorage.setItem("anilogue_mymangalist_live", JSON.stringify(myMangaList));
+        }, [myMangaList]);
 
         // Retrieve official MAL logged-in user profile if session exists
         useEffect(() => {
@@ -56,6 +65,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                     if (isMounted && user && user.isLoggedIn) {
                         setIsLoggedIn(true);
                         setUsername(user.username);
+                        setUserPicture(user.picture || "");
                     }
                 } catch (err) {
                     console.error("Auth verification failed:", err);
@@ -69,22 +79,44 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
         const mediaType = document.getElementById('root').getAttribute('data-media-type') || 'anime';
 
         const toggleBookmark = async (id, itemType = mediaType) => {
-            if (myList.includes(id)) {
-                setMyList(myList.filter(item => item !== id));
-                if (isLoggedIn) {
-                    try {
-                        await apiService.updateMALListStatus(id, 'dropped', itemType);
-                    } catch (e) {
-                        console.error("Live MAL unsync failed:", e);
+            if (itemType === 'manga') {
+                if (myMangaList.includes(id)) {
+                    setMyMangaList(myMangaList.filter(item => item !== id));
+                    if (isLoggedIn) {
+                        try {
+                            await apiService.deleteMALListItem(id, 'manga');
+                        } catch (e) {
+                            console.error("Live MAL unsync failed:", e);
+                        }
+                    }
+                } else {
+                    setMyMangaList([...myMangaList, id]);
+                    if (isLoggedIn) {
+                        try {
+                            await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga');
+                        } catch (e) {
+                            console.error("Live MAL sync failed:", e);
+                        }
                     }
                 }
             } else {
-                setMyList([...myList, id]);
-                if (isLoggedIn) {
-                    try {
-                        await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
-                    } catch (e) {
-                        console.error("Live MAL sync failed:", e);
+                if (myList.includes(id)) {
+                    setMyList(myList.filter(item => item !== id));
+                    if (isLoggedIn) {
+                        try {
+                            await apiService.deleteMALListItem(id, 'anime');
+                        } catch (e) {
+                            console.error("Live MAL unsync failed:", e);
+                        }
+                    }
+                } else {
+                    setMyList([...myList, id]);
+                    if (isLoggedIn) {
+                        try {
+                            await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime');
+                        } catch (e) {
+                            console.error("Live MAL sync failed:", e);
+                        }
                     }
                 }
             }
@@ -109,20 +141,22 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                     }}
                     isLoggedIn={isLoggedIn}
                     username={username}
+                    userPicture={userPicture}
                     onLoginClick={() => setShowLoginModal(true)}
                     onLogout={handleLogout}
-                    bookmarkCount={myList.length}
+                    bookmarkCount={myList.length + myMangaList.length}
                 />
 
                 <main className="flex-grow">
                     <DetailPage 
                         anime={{ id: animeId }} 
                         type={mediaType}
+                        isLoggedIn={isLoggedIn}
                         onClose={() => {
                             window.location.href = 'index.php?tab=' + (mediaType === 'manga' ? 'manga' : 'home');
                         }}
                         toggleBookmark={toggleBookmark}
-                        myList={myList}
+                        myList={mediaType === 'manga' ? myMangaList : myList}
                     />
                 </main>
 
