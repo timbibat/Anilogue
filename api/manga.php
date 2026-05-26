@@ -106,6 +106,38 @@ switch ($action) {
         curl_close($ch);
         
         if ($httpCode === 200) {
+            // Automatically mirror status update to local database if local user session exists
+            if (isset($_SESSION['local_user_id'])) {
+                try {
+                    require_once '../includes/db.php';
+                    $db = getDB();
+                    if ($db) {
+                        $score = isset($_POST['score']) ? intval($_POST['score']) : 0;
+                        $progress = isset($_POST['num_chapters_read']) ? intval($_POST['num_chapters_read']) : 0;
+                        $volsProgress = isset($_POST['num_volumes_read']) ? intval($_POST['num_volumes_read']) : 0;
+                        
+                        $stmt = $db->prepare("
+                            INSERT INTO watchlist (user_id, media_id, media_type, status, progress, volumes_progress, score)
+                            VALUES (:user_id, :media_id, 'manga', :status, :progress, :vols_progress, :score)
+                            ON DUPLICATE KEY UPDATE 
+                                status = VALUES(status), 
+                                progress = VALUES(progress), 
+                                volumes_progress = VALUES(volumes_progress), 
+                                score = VALUES(score)
+                        ");
+                        $stmt->execute([
+                            ':user_id' => $_SESSION['local_user_id'],
+                            ':media_id' => $id,
+                            ':status' => $status,
+                            ':progress' => $progress,
+                            ':vols_progress' => $volsProgress,
+                            ':score' => $score
+                        ]);
+                    }
+                } catch (Exception $dbEx) {
+                    // Silently fail to ensure response consistency
+                }
+            }
             echo $response;
         } else {
             echo json_encode([
@@ -147,6 +179,19 @@ switch ($action) {
         curl_close($ch);
         
         if ($httpCode === 200 || $httpCode === 204) {
+            // Automatically delete from local database if local user session exists
+            if (isset($_SESSION['local_user_id'])) {
+                try {
+                    require_once '../includes/db.php';
+                    $db = getDB();
+                    if ($db) {
+                        $stmt = $db->prepare("DELETE FROM watchlist WHERE user_id = ? AND media_id = ? AND media_type = 'manga'");
+                        $stmt->execute([$_SESSION['local_user_id'], $id]);
+                    }
+                } catch (Exception $dbEx) {
+                    // Silently fail
+                }
+            }
             echo json_encode(['status' => 'deleted', 'message' => 'Manga removed from your MyAnimeList successfully.']);
         } else {
             echo json_encode([
