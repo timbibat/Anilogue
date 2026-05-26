@@ -1,5 +1,4 @@
 const { useState, useRef } = React;
-import AnimeCard from './AnimeCard.js';
 
 // SVG Icons
 const ChevronLeftIcon = () => (
@@ -10,7 +9,7 @@ const ChevronRightIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
 );
 
-export default function AnimeSliderRow({ title, subtitle, badgeText, animeList = [], onCardClick, toggleBookmark, myList }) {
+window.AnimeSliderRow = function AnimeSliderRow({ title, subtitle, badgeText, animeList = [], onCardClick, toggleBookmark, myList }) {
     const sliderRef = useRef(null);
     const [showLeftBtn, setShowLeftBtn] = useState(false);
     const [showRightBtn, setShowRightBtn] = useState(true);

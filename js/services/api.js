@@ -36,16 +36,30 @@ async function fetchFromProxy(url) {
 }
 
 /**
- * Fetch top anime rankings (e.g. 'airing', 'bypopularity', 'movie', 'all')
+ * Fetch top anime rankings (e.g. 'all', 'airing', 'movie')
  */
-export async function getAnimeRanking(type = 'airing') {
+async function getAnimeRanking(type = 'all') {
     return await fetchFromProxy(`${PROXY_URL}?action=ranking&type=${type}`);
+}
+
+/**
+ * Fetch dynamic suggestions based on MAL suggestions algorithm
+ */
+async function getAnimeSuggestions() {
+    return await fetchFromProxy(`${PROXY_URL}?action=suggestions`);
+}
+
+/**
+ * Fetch anime by season and year (e.g. 2026 fall)
+ */
+async function getAnimeSeason(year, season) {
+    return await fetchFromProxy(`${PROXY_URL}?action=season&year=${year}&season=${season}`);
 }
 
 /**
  * Search anime from MAL based on text query
  */
-export async function searchAnime(query) {
+async function searchAnime(query) {
     if (!query || query.trim() === '') return [];
     return await fetchFromProxy(`${PROXY_URL}?action=search&q=${encodeURIComponent(query)}`);
 }
@@ -53,7 +67,7 @@ export async function searchAnime(query) {
 /**
  * Fetch extended metadata detail for a specific anime
  */
-export async function getAnimeDetails(id) {
+async function getAnimeDetails(id) {
     if (!id) throw new Error('Anime ID is required.');
     return await fetchFromProxy(`${PROXY_URL}?action=detail&id=${id}`);
 }
@@ -61,6 +75,16 @@ export async function getAnimeDetails(id) {
 /**
  * Fetch anime list filtered by genre tags
  */
-export async function getAnimeByGenre(genreName) {
+async function getAnimeByGenre(genreName) {
     return await fetchFromProxy(`${PROXY_URL}?action=genre&name=${encodeURIComponent(genreName)}`);
 }
+
+// Expose to window scope for other Babel components
+window.apiService = {
+    getAnimeRanking,
+    getAnimeSuggestions,
+    getAnimeSeason,
+    searchAnime,
+    getAnimeDetails,
+    getAnimeByGenre
+};

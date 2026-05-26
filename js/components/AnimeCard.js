@@ -15,7 +15,7 @@ const PlayCircleIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-white hover:text-animePurple-light transition-colors"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon></svg>
 );
 
-export default function AnimeCard({ anime, onCardClick, toggleBookmark, myList }) {
+window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myList }) {
     if (!anime) return null;
     const isBookmarked = myList.includes(anime.id);
 

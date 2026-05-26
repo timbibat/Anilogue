@@ -17,9 +17,26 @@ include 'includes/header.php';
     </div>
 </div>
 
-<!-- Main React Orchestrator Bootstrapper -->
-<script type="text/babel" data-type="module">
-    import App from './js/app.js';
+<!-- Load API Client Service First -->
+<script type="text/babel" src="js/services/api.js"></script>
+
+<!-- Load Individual UI Leaf Components -->
+<script type="text/babel" src="js/components/AnimeCard.js"></script>
+<script type="text/babel" src="js/components/Navbar.js"></script>
+<script type="text/babel" src="js/components/LoginModal.js"></script>
+<script type="text/babel" src="js/components/Footer.js"></script>
+
+<!-- Load Composite Components depending on Leaf Components -->
+<script type="text/babel" src="js/components/HeroBanner.js"></script>
+<script type="text/babel" src="js/components/AnimeSliderRow.js"></script>
+<script type="text/babel" src="js/components/CategoryTabCatalog.js"></script>
+<script type="text/babel" src="js/components/DetailModal.js"></script>
+
+<!-- Load Main Orchestrator App Component -->
+<script type="text/babel" src="js/app.js"></script>
+
+<!-- Bootstrapper Mounting React App -->
+<script type="text/babel">
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
 </script>

@@ -1,20 +1,20 @@
 const { useState, useEffect } = React;
-import Navbar from './components/Navbar.js';
-import HeroBanner from './components/HeroBanner.js';
-import AnimeSliderRow from './components/AnimeSliderRow.js';
-import CategoryTabCatalog from './components/CategoryTabCatalog.js';
-import DetailModal from './components/DetailModal.js';
-import LoginModal from './components/LoginModal.js';
-import Footer from './components/Footer.js';
-import AnimeCard from './components/AnimeCard.js';
-import * as apiService from './services/api.js';
+const apiService = window.apiService;
+const Navbar = window.Navbar;
+const HeroBanner = window.HeroBanner;
+const AnimeSliderRow = window.AnimeSliderRow;
+const CategoryTabCatalog = window.CategoryTabCatalog;
+const DetailModal = window.DetailModal;
+const LoginModal = window.LoginModal;
+const Footer = window.Footer;
+const AnimeCard = window.AnimeCard;
 
 // Global SVGs for Search/Catalog Section
 const CloseIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 );
 
-export default function App() {
+window.App = function App() {
     // Navigation & Primary state
     const [activeTab, setActiveTab] = useState("home"); // 'home' | 'anime' | 'movies' | 'mylist'
     const [searchQuery, setSearchQuery] = useState("");
@@ -94,25 +94,25 @@ export default function App() {
             setInitialLoading(true);
             setNetworkError(false);
             try {
-                // Fetch rankings concurrently
-                const [airing, popular, movies] = await Promise.all([
+                // Fetch rankings and suggestions concurrently
+                const [suggestions, popular, movies] = await Promise.all([
                     apiService.getAnimeRanking("airing"),
-                    apiService.getAnimeRanking("bypopularity"),
+                    apiService.getAnimeRanking("all"),
                     apiService.getAnimeRanking("movie")
                 ]);
 
                 if (isMounted) {
                     // Check if proxy reported unconfigured credentials
-                    if ((airing && airing.isUnconfigured) || (popular && popular.isUnconfigured)) {
+                    if ((suggestions && suggestions.isUnconfigured) || (popular && popular.isUnconfigured)) {
                         setApiUnconfigured(true);
                     } else {
-                        setAiringAnime(airing || []);
+                        setAiringAnime(suggestions || []);
                         setPopularAnime(popular || []);
                         setMoviesAnime(movies || []);
                         
-                        // Select top 3 airing anime to showcase in the Hero Banner carousel
-                        if (airing && airing.length > 0) {
-                            setFeaturedAnime(airing.slice(0, 3));
+                        // Select top 3 popular anime to showcase in the Hero Banner carousel
+                        if (popular && popular.length > 0) {
+                            setFeaturedAnime(popular.slice(0, 3));
                         }
                     }
                 }
@@ -312,8 +312,8 @@ export default function App() {
                                         <div className="space-y-12 py-10 px-4 md:px-12 relative z-10 -mt-16 md:-mt-24">
                                             
                                             <AnimeSliderRow 
-                                                title="Same Day Release" 
-                                                subtitle="Simulcast currently airing live"
+                                                title="Currently Airing" 
+                                                subtitle="Top trending simulcasts broadcasting now"
                                                 badgeText="LIVE"
                                                 animeList={airingAnime}
                                                 onCardClick={setSelectedAnime}
@@ -322,8 +322,8 @@ export default function App() {
                                             />
 
                                             <AnimeSliderRow 
-                                                title="Popular Anime" 
-                                                subtitle="Top trending charts today"
+                                                title="Top Ranked Anime" 
+                                                subtitle="Highest rated series of all time"
                                                 animeList={popularAnime}
                                                 onCardClick={setSelectedAnime}
                                                 toggleBookmark={toggleBookmark}

@@ -1,5 +1,5 @@
 const { useState, useEffect } = React;
-import * as apiService from '../services/api.js';
+const apiService = window.apiService;
 
 // SVG Icons
 const CloseIcon = () => (
@@ -22,9 +22,8 @@ const CheckIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
 );
 
-export default function DetailModal({ anime, onClose, toggleBookmark, myList }) {
-    const [activeTab, setActiveTab] = useState("episodes"); // 'episodes' | 'synopsis' | 'trailer'
-    const [activeEpisode, setActiveEpisode] = useState(1);
+window.DetailModal = function DetailModal({ anime, onClose, toggleBookmark, myList }) {
+    const [activeTab, setActiveTab] = useState("specifications"); // 'specifications' | 'synopsis' | 'trailer'
     const [detailedAnime, setDetailedAnime] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -41,14 +40,13 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                     if (data && !data.isUnconfigured) {
                         setDetailedAnime(data);
                     } else {
-                        // Fallback to basic props if unconfigured
                         setDetailedAnime(anime);
                     }
                 }
             } catch (err) {
                 console.error("Error loading anime details:", err);
                 if (isMounted) {
-                    setDetailedAnime(anime); // Fallback
+                    setDetailedAnime(anime);
                 }
             } finally {
                 if (isMounted) {
@@ -70,7 +68,6 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
         return () => window.removeEventListener("keydown", handleEscape);
     }, [onClose]);
 
-    // Use detailed anime metadata if loaded, otherwise fall back to basic props
     const currentAnime = detailedAnime || anime;
 
     return (
@@ -93,7 +90,7 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                     </div>
                 ) : (
                     <>
-                        {/* Left Side: Mock Video Streaming Player OR Cover */}
+                        {/* Left Side: Gorgeous Profile Showcase Poster & Trailer Player */}
                         <div className="w-full md:w-3/5 bg-black relative flex flex-col justify-between border-b md:border-b-0 md:border-r border-animePurple/20">
                             
                             {activeTab === 'trailer' ? (
@@ -106,7 +103,7 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                                     ></iframe>
                                 </div>
                             ) : (
-                                <div className="relative w-full h-[250px] sm:h-full min-h-[300px] overflow-hidden flex flex-col justify-end p-6">
+                                <div className="relative w-full h-[250px] sm:h-full min-h-[350px] overflow-hidden flex flex-col justify-end p-6">
                                     <img 
                                         src={currentAnime.banner || currentAnime.cover} 
                                         alt={currentAnime.title} 
@@ -115,7 +112,7 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                                     {/* Vignette styling gradients */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-transparent"></div>
                                     
-                                    {/* Mock Streaming Player Controls Overlay */}
+                                    {/* Profile Showcase Overlay */}
                                     <div className="relative z-10 space-y-4">
                                         <div className="flex justify-center mb-6">
                                             <div className="w-16 h-16 rounded-full bg-animePurple/95 flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-animePurple/45 border-2 border-white/20" onClick={() => setActiveTab("trailer")}>
@@ -123,19 +120,9 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                                             </div>
                                         </div>
                                         <div className="text-left">
-                                            <span className="text-[10px] text-animeYellow-neon font-orbitron tracking-widest font-black uppercase">NOW PLAYING</span>
+                                            <span className="text-[10px] text-animePurple-light font-orbitron tracking-widest font-black uppercase">DATABASE PROFILE</span>
                                             <h4 className="text-lg font-bold text-white leading-tight">{currentAnime.title}</h4>
-                                            <p className="text-xs text-gray-300">Episode {activeEpisode} • Simulcast FHD 1080p</p>
-                                        </div>
-                                        {/* Mock Player Bar */}
-                                        <div className="space-y-1">
-                                            <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                                                <div className="w-1/3 h-full bg-animePurple rounded-full"></div>
-                                            </div>
-                                            <div className="flex items-center justify-between text-[9px] text-gray-400">
-                                                <span>07:22</span>
-                                                <span>24:00</span>
-                                            </div>
+                                            <p className="text-xs text-gray-300">Synchronized live with MyAnimeList API v2</p>
                                         </div>
                                     </div>
                                 </div>
@@ -143,7 +130,7 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
 
                         </div>
 
-                        {/* Right Side: Tab Menu / Details, Episodes lists */}
+                        {/* Right Side: Specifications / Detail Tabs */}
                         <div className="w-full md:w-2/5 p-6 flex flex-col justify-between text-left space-y-4 bg-darkCard">
                             
                             {/* Modal metadata headings */}
@@ -157,7 +144,7 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                                 <div className="flex items-center space-x-3 text-xs text-gray-400 font-semibold">
                                     <span className="flex items-center text-animeYellow space-x-1">
                                         <StarIcon />
-                                        <span>{currentAnime.rating}</span>
+                                        <span>{currentAnime.rating} Score</span>
                                     </span>
                                     <span>{currentAnime.year}</span>
                                     <span>{currentAnime.episodes} Eps</span>
@@ -167,37 +154,49 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                             {/* Section Switcher Tabs */}
                             <div className="flex border-b border-animePurple/10 text-xs font-semibold">
                                 <button 
-                                    onClick={() => setActiveTab("episodes")}
-                                    className={`py-2 px-3 focus:outline-none cursor-pointer uppercase ${activeTab === 'episodes' ? 'border-b-2 border-animePurple text-white' : 'text-gray-400 hover:text-white'}`}
+                                    onClick={() => setActiveTab("specifications")}
+                                    className={`py-2 px-3 focus:outline-none cursor-pointer uppercase ${activeTab === 'specifications' ? 'border-b-2 border-animePurple text-white' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    Episodes
+                                    Specifications
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab("synopsis")}
                                     className={`py-2 px-3 focus:outline-none cursor-pointer uppercase ${activeTab === 'synopsis' ? 'border-b-2 border-animePurple text-white' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    Synopsis
+                                    Synopsis & Bio
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab("trailer")}
                                     className={`py-2 px-3 focus:outline-none cursor-pointer uppercase ${activeTab === 'trailer' ? 'border-b-2 border-animePurple text-white' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    Official Trailer
+                                    Teaser PV
                                 </button>
                             </div>
 
                             {/* Dynamic tab contents frame */}
-                            <div className="flex-grow overflow-y-auto max-h-[220px] pr-2 no-scrollbar">
+                            <div className="flex-grow overflow-y-auto max-h-[240px] pr-2 no-scrollbar">
                                 
                                 {activeTab === "synopsis" && (
                                     <div className="space-y-4">
-                                        <p className="text-gray-400 text-xs leading-relaxed">
-                                            {currentAnime.synopsis}
-                                        </p>
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] text-animePurple-light font-bold font-orbitron uppercase tracking-widest">MAL Synopsis:</span>
+                                            <p className="text-gray-400 text-xs leading-relaxed">
+                                                {currentAnime.synopsis}
+                                            </p>
+                                        </div>
+
+                                        {currentAnime.background && (
+                                            <div className="space-y-1 border-t border-animePurple/10 pt-2">
+                                                <span className="text-[9px] text-animeYellow font-bold font-orbitron uppercase tracking-widest">Production Background Notes:</span>
+                                                <p className="text-gray-500 text-xs leading-relaxed italic">
+                                                    {currentAnime.background}
+                                                </p>
+                                            </div>
+                                        )}
                                         
                                         {/* Display Studio if available */}
                                         {currentAnime.studios && currentAnime.studios.length > 0 && (
-                                            <div className="text-xs text-gray-500 font-semibold">
+                                            <div className="text-xs text-gray-500 font-semibold border-t border-animePurple/10 pt-2">
                                                 Studio: <span className="text-animePurple-light">{currentAnime.studios.join(", ")}</span>
                                             </div>
                                         )}
@@ -214,37 +213,68 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                                     <div className="space-y-2 py-4">
                                         <p className="text-xs text-gray-400">Official PV Teaser trailer. Play directly on the video window frame on the left side.</p>
                                         <button 
-                                            onClick={() => setActiveTab("episodes")}
+                                            onClick={() => setActiveTab("specifications")}
                                             className="text-xs text-animePurple hover:underline font-bold mt-2 cursor-pointer flex items-center space-x-1"
                                         >
-                                            <span>Return to Episode Guides</span>
+                                            <span>Return to Specifications</span>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                                         </button>
                                     </div>
                                 )}
 
-                                {activeTab === "episodes" && (
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {Array.from({ length: Math.min(currentAnime.episodes, 16) }, (_, i) => i + 1).map(ep => (
-                                            <button 
-                                                key={ep}
-                                                onClick={() => { setActiveTab("episodes"); setActiveEpisode(ep); }}
-                                                className={`text-xs py-2 rounded-md font-semibold font-orbitron transition-all border ${activeEpisode === ep ? 'bg-animePurple border-animePurple text-white shadow-neon-purple shadow-animePurple/20' : 'bg-darkBg/60 border-animePurple/10 text-gray-400 hover:text-white hover:border-animePurple/30'}`}
-                                            >
-                                                EP {ep}
-                                            </button>
-                                        ))}
-                                        {currentAnime.episodes > 16 && (
-                                            <div className="col-span-4 text-center text-[10px] text-gray-500 py-1 font-medium">
-                                                Showing top 16 of {currentAnime.episodes} episodes available.
+                                {activeTab === "specifications" && (
+                                    <div className="space-y-4">
+                                        {/* Premium specifications grid */}
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">MAL Rank:</span>
+                                                <span className="text-white font-extrabold font-orbitron">#{currentAnime.rank}</span>
                                             </div>
-                                        )}
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">Popularity Rank:</span>
+                                                <span className="text-white font-extrabold font-orbitron">#{currentAnime.popularity}</span>
+                                            </div>
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">List Members:</span>
+                                                <span className="text-white font-bold">{currentAnime.members}</span>
+                                            </div>
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">Scoring Users:</span>
+                                                <span className="text-white font-bold">{currentAnime.scorers}</span>
+                                            </div>
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md col-span-2">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">Broadcast Schedule:</span>
+                                                <span className="text-white font-medium">{currentAnime.broadcast}</span>
+                                            </div>
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">Original Source:</span>
+                                                <span className="text-white font-medium">{currentAnime.source}</span>
+                                            </div>
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">Episode Duration:</span>
+                                                <span className="text-white font-medium">{currentAnime.duration}</span>
+                                            </div>
+                                            <div className="bg-darkBg/60 border border-animePurple/10 p-2 rounded-md col-span-2">
+                                                <span className="text-[9px] text-gray-500 block font-orbitron uppercase tracking-wider">Age Classification:</span>
+                                                <span className="text-white font-medium">{currentAnime.ageRating}</span>
+                                            </div>
+                                        </div>
+
+                                        <a 
+                                            href={`https://myanimelist.net/anime/${currentAnime.id}`} 
+                                            target="_blank" 
+                                            rel="noopener"
+                                            className="text-xs text-animePurple hover:underline font-bold mt-4 cursor-pointer flex items-center space-x-1.5 justify-center py-2 bg-darkBg/90 rounded border border-animePurple/20 hover:border-animePurple transition-all"
+                                        >
+                                            <span>View Profile on MyAnimeList</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                        </a>
                                     </div>
                                 )}
 
                             </div>
 
-                            {/* Dynamic bookmark interactions footer */}
+                            {/* Dynamic watchlist interactions footer */}
                             <div className="pt-4 border-t border-animePurple/10 flex items-center justify-between gap-4">
                                 <button 
                                     onClick={() => toggleBookmark(currentAnime.id)}
@@ -253,12 +283,12 @@ export default function DetailModal({ anime, onClose, toggleBookmark, myList }) 
                                     {isBookmarked ? (
                                         <>
                                             <CheckIcon />
-                                            <span>WATCHLISTED</span>
+                                            <span>IN WATCHLIST</span>
                                         </>
                                     ) : (
                                         <>
                                             <PlusIcon />
-                                            <span>ADD TO MY LIST</span>
+                                            <span>ADD TO MY WATCHLIST</span>
                                         </>
                                     )}
                                 </button>

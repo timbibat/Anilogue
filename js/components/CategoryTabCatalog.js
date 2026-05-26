@@ -1,8 +1,7 @@
 const { useState, useEffect } = React;
-import AnimeCard from './AnimeCard.js';
-import * as apiService from '../services/api.js';
+const apiService = window.apiService;
 
-export default function CategoryTabCatalog({ onCardClick, toggleBookmark, myList }) {
+window.CategoryTabCatalog = function CategoryTabCatalog({ onCardClick, toggleBookmark, myList }) {
     const categories = ["Airing Now", "Action", "Romance", "Comedy", "Sci-Fi", "Fantasy", "Drama", "Movies"];
     const [activeCategory, setActiveCategory] = useState("Airing Now");
     const [animeList, setAnimeList] = useState([]);

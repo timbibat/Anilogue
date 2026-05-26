@@ -2,7 +2,7 @@
 /**
  * Anilogue MyAnimeList API v2 Proxy Endpoint
  * Securely forwards frontend requests to api.myanimelist.net v2,
- * appends Client-ID headers, and handles field translation/mapping.
+ * appends OAuth2 Bearer Token headers, and handles comprehensive field mappings.
  */
 
 header('Content-Type: application/json');
@@ -11,16 +11,22 @@ header('Access-Control-Allow-Methods: GET');
 
 require_once '../config.php';
 
-// If MyAnimeList Client ID is not configured, inform the frontend
+// If MyAnimeList Client ID/Token is not configured, inform the frontend
 if (!isMalClientConfigured()) {
     echo json_encode([
         'status' => 'unconfigured',
-        'message' => 'MyAnimeList API Client ID is not configured in config.php.'
+        'message' => 'MyAnimeList API Token is not configured in config.php.'
     ]);
     exit;
 }
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
+
+// Helper for comprehensive fields used across searches and lists
+$listFields = 'id,title,main_picture,mean,synopsis,genres,num_episodes,start_season,media_type,status,rank,popularity';
+
+// Detailed fields explicitly requested by the user's details cURL
+$detailFields = 'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
 
 switch ($action) {
     case 'search':
@@ -29,27 +35,40 @@ switch ($action) {
             echo json_encode(['error' => 'Query parameter "q" is required.']);
             exit;
         }
-        
-        $url = MAL_API_URL . '/anime?q=' . urlencode($query) . '&limit=20&fields=id,title,main_picture,mean,synopsis,genres,num_episodes,start_season,media_type,status';
+        $url = MAL_API_URL . '/anime?q=' . urlencode($query) . '&limit=20&fields=' . $listFields;
         fetchAndMapMALList($url);
         break;
 
     case 'ranking':
-        $type = isset($_GET['type']) ? $_GET['type'] : 'airing';
-        // Validate ranking type
+        $type = isset($_GET['type']) ? $_GET['type'] : 'all';
         $allowedTypes = ['all', 'airing', 'upcoming', 'tv', 'ova', 'movie', 'special', 'bypopularity', 'favorite'];
         if (!in_array($type, $allowedTypes)) {
-            $type = 'airing';
+            $type = 'all';
         }
-        
-        $url = MAL_API_URL . '/anime/ranking?ranking_type=' . $type . '&limit=20&fields=id,title,main_picture,mean,synopsis,genres,num_episodes,start_season,media_type,status';
+        $url = MAL_API_URL . '/anime/ranking?ranking_type=' . $type . '&limit=20&fields=' . $listFields;
+        fetchAndMapMALList($url);
+        break;
+
+    case 'suggestions':
+        $url = MAL_API_URL . '/anime/suggestions?limit=20&fields=' . $listFields;
+        fetchAndMapMALList($url);
+        break;
+
+    case 'season':
+        // Default to active season (e.g. 2026 spring)
+        $year = isset($_GET['year']) ? intval($_GET['year']) : 2026;
+        $season = isset($_GET['season']) ? $_GET['season'] : 'spring';
+        $allowedSeasons = ['winter', 'spring', 'summer', 'fall'];
+        if (!in_array($season, $allowedSeasons)) {
+            $season = 'spring';
+        }
+        $url = MAL_API_URL . '/anime/season/' . $year . '/' . $season . '?limit=20&fields=' . $listFields;
         fetchAndMapMALList($url);
         break;
 
     case 'genre':
         $genreName = isset($_GET['name']) ? $_GET['name'] : 'Action';
-        // We perform a query search filter to find the genre
-        $url = MAL_API_URL . '/anime?q=' . urlencode($genreName) . '&limit=20&fields=id,title,main_picture,mean,synopsis,genres,num_episodes,start_season,media_type,status';
+        $url = MAL_API_URL . '/anime?q=' . urlencode($genreName) . '&limit=20&fields=' . $listFields;
         fetchAndMapMALList($url);
         break;
 
@@ -59,33 +78,44 @@ switch ($action) {
             echo json_encode(['error' => 'Valid anime "id" parameter is required.']);
             exit;
         }
-        
-        $url = MAL_API_URL . '/anime/' . $id . '?fields=id,title,main_picture,alternative_titles,synopsis,mean,genres,num_episodes,start_season,media_type,status,pictures,recommendations,studios';
+        $url = MAL_API_URL . '/anime/' . $id . '?fields=' . $detailFields;
         fetchAndMapMALDetail($url);
         break;
 
     default:
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Supported actions: search, ranking, genre, detail.'
+            'message' => 'Invalid action. Supported actions: search, ranking, suggestions, season, genre, detail.'
         ]);
         break;
 }
 
 /**
- * Perform a cURL request to MyAnimeList API with necessary Client ID header.
+ * Perform a cURL request using the correct MyAnimeList authorization header.
+ * Dynamically switches between Client ID (X-MAL-CLIENT-ID) and OAuth2 (Bearer) based on token length.
  */
 function makeMALRequest($url) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'X-MAL-CLIENT-ID: ' . MAL_CLIENT_ID
-    ]);
-    // Timeout in seconds
-    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     
-    // In dev environment or specific hostings, ignore SSL peer verification if needed
+    $token = trim(MAL_CLIENT_ID);
+    $headers = [];
+    
+    // Detect key type: standard Client ID is a 32-character hex string.
+    // Bearer token is a very long JWT string (usually > 150 characters).
+    if (strlen($token) <= 45) {
+        $headers[] = 'X-MAL-CLIENT-ID: ' . $token;
+    } else {
+        if (strpos(strtolower($token), 'bearer ') === 0) {
+            $token = substr($token, 7);
+        }
+        $headers[] = 'Authorization: Bearer ' . $token;
+    }
+    
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
     $response = curl_exec($ch);
@@ -124,7 +154,6 @@ function fetchAndMapMALList($url) {
     $dataNodes = isset($rawData['data']) ? $rawData['data'] : [];
     
     foreach ($dataNodes as $node) {
-        // Search and ranking endpoints wrap anime under a 'node' property
         $anime = isset($node['node']) ? $node['node'] : $node;
         $items[] = translateMALAnimeSchema($anime);
     }
@@ -143,26 +172,27 @@ function fetchAndMapMALDetail($url) {
         exit;
     }
 
-    $mapped = translateMALAnimeSchema($rawData);
+    $mapped = translateMALAnimeSchema($rawData, true);
     
-    // Add additional fields specific to Details modal
+    // Process pictures gallery
     if (isset($rawData['pictures'])) {
         $mapped['pictures'] = array_map(function($pic) {
             return isset($pic['large']) ? $pic['large'] : $pic['medium'];
         }, $rawData['pictures']);
         
-        // Choose the second picture as an active banner if possible
         if (count($mapped['pictures']) > 1) {
             $mapped['banner'] = $mapped['pictures'][1];
         }
     }
     
+    // Process related/recommendations arrays
     if (isset($rawData['recommendations'])) {
         $mapped['recommendations'] = array_slice(array_map(function($rec) {
             return translateMALAnimeSchema($rec['node']);
-        }, $rawData['recommendations']), 0, 5);
+        }, $rawData['recommendations']), 0, 6);
     }
     
+    // Process studios
     if (isset($rawData['studios'])) {
         $mapped['studios'] = array_map(function($studio) {
             return $studio['name'];
@@ -175,24 +205,24 @@ function fetchAndMapMALDetail($url) {
 /**
  * Map a single MyAnimeList API anime item object to the frontend expected properties.
  */
-function translateMALAnimeSchema($anime) {
+function translateMALAnimeSchema($anime, $fetchTrailer = false) {
     $id = isset($anime['id']) ? $anime['id'] : 0;
     
-    // Cover photo resolutions mapping
+    // Cover mapping
     $cover = '';
     if (isset($anime['main_picture'])) {
         $cover = isset($anime['main_picture']['large']) ? $anime['main_picture']['large'] : $anime['main_picture']['medium'];
     }
     
     // Format release year
-    $year = 2024;
+    $year = 2026;
     if (isset($anime['start_season']['year'])) {
         $year = intval($anime['start_season']['year']);
     } elseif (isset($anime['start_date'])) {
         $year = intval(substr($anime['start_date'], 0, 4));
     }
     
-    // Translate Genres objects array to plain string array
+    // Translate Genres objects
     $genres = [];
     if (isset($anime['genres'])) {
         foreach ($anime['genres'] as $g) {
@@ -203,7 +233,7 @@ function translateMALAnimeSchema($anime) {
         $genres = ['Anime'];
     }
     
-    // Format Mean score rating to 1 decimal place
+    // Format Mean score rating
     $rating = '7.5';
     if (isset($anime['mean']) && $anime['mean'] > 0) {
         $rating = number_format($anime['mean'], 1);
@@ -221,13 +251,53 @@ function translateMALAnimeSchema($anime) {
     $status = isset($anime['status']) ? $anime['status'] : '';
     $sameDay = ($status === 'currently_airing');
 
-    // Create a beautiful, dynamic search-based youtube embed trailer url (rickroll fallback or generic trailer)
-    // In production, we search youtube for "{title} PV Trailer"
-    $cleanTitle = preg_replace('/[^A-Za-z0-9 ]/', '', $anime['title']);
-    $trailerUrl = 'https://www.youtube.com/embed/dQw4w9WgXcQ'; // Rickroll as standard fallback or search query embed:
-    // Better: Embed a YouTube search-based iframe fallback, but since standard YouTube iframe requires embeds:
-    // We can map known top IDs or provide a structured PV trailer
+    // Parse rich detail specifications fields
+    $rank = isset($anime['rank']) ? intval($anime['rank']) : 'N/A';
+    $popularity = isset($anime['popularity']) ? intval($anime['popularity']) : 'N/A';
+    $members = isset($anime['num_list_users']) ? number_format($anime['num_list_users']) : 'N/A';
+    $scorers = isset($anime['num_scoring_users']) ? number_format($anime['num_scoring_users']) : 'N/A';
     
+    $broadcast = 'N/A';
+    if (isset($anime['broadcast']['string'])) {
+        $broadcast = $anime['broadcast']['string'];
+    }
+    
+    $source = isset($anime['source']) ? ucwords(str_replace('_', ' ', $anime['source'])) : 'Original';
+    
+    // Convert duration seconds to clean string (e.g. 24 minutes)
+    $duration = '24 min';
+    if (isset($anime['average_episode_duration']) && $anime['average_episode_duration'] > 0) {
+        $duration = round($anime['average_episode_duration'] / 60) . ' min';
+    }
+    
+    $ageRating = isset($anime['rating']) ? strtoupper(str_replace('_', '-', $anime['rating'])) : 'PG-13';
+    $background = isset($anime['background']) ? $anime['background'] : '';
+
+    // Dynamically fetch or assign embeddable YouTube PV trailers (Rickroll is blocked on localhost)
+    $trailerUrl = 'https://www.youtube.com/embed/Qn5z35B3B7o'; // Default Frieren PV trailer
+    
+    if ($fetchTrailer) {
+        $trailerUrl = fetchCrunchyrollTrailer($anime['title']);
+    } else {
+        // Lightweight mapping for fast list loads
+        $lowerTitle = strtolower($anime['title']);
+        if (strpos($lowerTitle, 'demon slayer') !== false || strpos($lowerTitle, 'kimetsu') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/VQGCKyvzIM4';
+        } elseif (strpos($lowerTitle, 'solo leveling') !== false || strpos($lowerTitle, 'sung jin') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/yMziwV4L8mE';
+        } elseif (strpos($lowerTitle, 'chainsaw') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/q15CRdE5Bv0';
+        } elseif (strpos($lowerTitle, 'jujutsu') !== false || strpos($lowerTitle, 'kaisen') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/pm6t3C-kexs';
+        } elseif (strpos($lowerTitle, 'one piece') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/S8_YwFLCh4U';
+        } elseif (strpos($lowerTitle, 'naruto') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/5TnHb2lZf4c';
+        } elseif (strpos($lowerTitle, 'frieren') !== false) {
+            $trailerUrl = 'https://www.youtube.com/embed/Qn5z35B3B7o';
+        }
+    }
+
     return [
         'id' => $id,
         'title' => $anime['title'],
@@ -238,10 +308,68 @@ function translateMALAnimeSchema($anime) {
         'synopsis' => isset($anime['synopsis']) ? $anime['synopsis'] : 'No description details available from MyAnimeList.',
         'genres' => $genres,
         'cover' => $cover,
-        'banner' => $cover, // Default banner to cover unless alternate high-res photos exist
+        'banner' => $cover,
         'sameDay' => $sameDay,
         'popular' => isset($anime['mean']) && $anime['mean'] >= 8.0,
         'category' => count($genres) > 0 ? $genres[0] : 'Action',
-        'trailer' => $trailerUrl
+        'trailer' => $trailerUrl,
+        
+        // Rich MAL Metadata Profile properties (Non-streaming site layout)
+        'rank' => $rank,
+        'popularity' => $popularity,
+        'members' => $members,
+        'scorers' => $scorers,
+        'broadcast' => $broadcast,
+        'source' => $source,
+        'duration' => $duration,
+        'ageRating' => $ageRating,
+        'background' => $background
     ];
+}
+
+/**
+ * Keyless dynamic scraper that fetches the first YouTube video result for a Crunchyroll trailer query.
+ */
+function fetchCrunchyrollTrailer($title) {
+    // Standard Crunchyroll trailer query format
+    $query = 'Crunchyroll ' . $title . ' Official Trailer';
+    $url = 'https://www.youtube.com/feeds/videos.xml?search_query=' . urlencode($query);
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    $xmlData = curl_exec($ch);
+    curl_close($ch);
+    
+    if ($xmlData) {
+        // Disable XML entities for security (prevents XXE attacks)
+        $disableEntities = libxml_disable_entity_loader(true);
+        $xml = simplexml_load_string($xmlData, 'SimpleXMLElement', LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_disable_entity_loader($disableEntities);
+        
+        if ($xml && isset($xml->entry)) {
+            $firstEntry = $xml->entry[0];
+            $namespaces = $firstEntry->getNameSpaces(true);
+            if (isset($namespaces['yt'])) {
+                $yt = $firstEntry->children($namespaces['yt']);
+                if (isset($yt->videoId)) {
+                    return 'https://www.youtube.com/embed/' . trim((string)$yt->videoId);
+                }
+            }
+            // Fallback link extraction
+            if (isset($firstEntry->link)) {
+                $href = (string)$firstEntry->link['href'];
+                parse_str(parse_url($href, PHP_URL_QUERY), $queryParams);
+                if (isset($queryParams['v'])) {
+                    return 'https://www.youtube.com/embed/' . $queryParams['v'];
+                }
+            }
+        }
+    }
+    
+    // Default fallback to Frieren PV if lookup fails
+    return 'https://www.youtube.com/embed/Qn5z35B3B7o';
 }
