@@ -20,7 +20,9 @@ window.App = function App() {
     const [searchQuery, setSearchQuery] = useState("");
     
     // Modals & Authentication
-    const [selectedAnime, setSelectedAnime] = useState(null);
+    const handleAnimeSelect = (anime) => {
+        window.location.href = 'details.php?id=' + anime.id;
+    };
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState("");
@@ -89,6 +91,16 @@ window.App = function App() {
 
     // Fetch initial homepage categories
     useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const urlTab = params.get("tab");
+        const urlQuery = params.get("q");
+        if (urlTab) {
+            setActiveTab(urlTab);
+        }
+        if (urlQuery) {
+            setSearchQuery(decodeURIComponent(urlQuery));
+        }
+
         let isMounted = true;
         async function loadHomeData() {
             setInitialLoading(true);
@@ -132,10 +144,7 @@ window.App = function App() {
         return () => { isMounted = false; };
     }, []);
 
-    // Reset selected anime details view when active tab or search query shifts
-    useEffect(() => {
-        setSelectedAnime(null);
-    }, [activeTab, searchQuery]);
+
 
     // Fetch live search queries
     useEffect(() => {
@@ -254,14 +263,7 @@ window.App = function App() {
 
             {/* Dynamic Page Views */}
             <main className="flex-grow">
-                {selectedAnime ? (
-                    <DetailPage 
-                        anime={selectedAnime} 
-                        onClose={() => setSelectedAnime(null)}
-                        toggleBookmark={toggleBookmark}
-                        myList={myList}
-                    />
-                ) : searchQuery.trim() !== "" ? (
+                {searchQuery.trim() !== "" ? (
                     // Live Search Override View
                     <section className="max-w-[1400px] mx-auto px-4 md:px-8 pt-32 pb-16 min-h-[70vh]">
                         <div className="text-left space-y-6 mb-8 border-b border-animePurple/25 pb-6">
@@ -287,7 +289,7 @@ window.App = function App() {
                                     <AnimeCard 
                                         key={anime.id} 
                                         anime={anime} 
-                                        onCardClick={setSelectedAnime}
+                                        onCardClick={handleAnimeSelect}
                                         toggleBookmark={toggleBookmark}
                                         myList={myList}
                                     />
@@ -315,7 +317,7 @@ window.App = function App() {
                                     <>
                                         <HeroBanner 
                                             featuredList={featuredAnime}
-                                            onCardClick={setSelectedAnime} 
+                                            onCardClick={handleAnimeSelect} 
                                             toggleBookmark={toggleBookmark}
                                             myList={myList}
                                         />
@@ -328,7 +330,7 @@ window.App = function App() {
                                                 subtitle="Top trending simulcasts broadcasting now"
                                                 badgeText="LIVE"
                                                 animeList={airingAnime}
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
@@ -337,13 +339,13 @@ window.App = function App() {
                                                 title="Top Ranked Anime" 
                                                 subtitle="Highest rated series of all time"
                                                 animeList={popularAnime}
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
 
                                             <CategoryTabCatalog 
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
@@ -352,7 +354,7 @@ window.App = function App() {
                                                 title="Cinematic Anime Movies" 
                                                 subtitle="Breathtaking feature length visuals"
                                                 animeList={moviesAnime}
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
@@ -382,7 +384,7 @@ window.App = function App() {
                                             <AnimeCard 
                                                 key={anime.id} 
                                                 anime={anime} 
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
@@ -411,7 +413,7 @@ window.App = function App() {
                                             <AnimeCard 
                                                 key={anime.id} 
                                                 anime={anime} 
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />
@@ -450,7 +452,7 @@ window.App = function App() {
                                             <AnimeCard 
                                                 key={anime.id} 
                                                 anime={anime} 
-                                                onCardClick={setSelectedAnime}
+                                                onCardClick={handleAnimeSelect}
                                                 toggleBookmark={toggleBookmark}
                                                 myList={myList}
                                             />

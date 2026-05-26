@@ -2,8 +2,8 @@ const { useState, useEffect } = React;
 const apiService = window.apiService;
 
 // SVG Icons
-const StarIcon = () => (
-    <svg className="w-3.5 h-3.5 fill-animeYellow text-animeYellow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+const StarIcon = ({ className = "w-3.5 h-3.5 fill-animeYellow text-animeYellow" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 );
 
 const PlusIcon = () => (
@@ -100,15 +100,15 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                         <h1 className="font-orbitron font-black text-3xl sm:text-5xl text-white leading-tight drop-shadow-md tracking-wide max-w-4xl">
                             {currentAnime.title}
                         </h1>
-                        <div className="flex items-center space-x-4 text-sm text-gray-300 font-semibold pt-1">
-                            <span className="flex items-center text-animeYellow space-x-1">
-                                <StarIcon />
-                                <span>{currentAnime.rating} Score</span>
-                            </span>
-                            <span>|</span>
-                            <span>{currentAnime.year}</span>
-                            <span>|</span>
-                            <span>{currentAnime.episodes} Episodes</span>
+                        <div className="flex flex-wrap items-center gap-3 pt-1">
+                            <div className="flex items-center space-x-1.5 bg-animeYellow text-darkBg px-3 py-1 rounded font-orbitron font-black text-xs shadow-lg shadow-animeYellow/25 border border-animeYellow/30">
+                                <StarIcon className="w-3.5 h-3.5 fill-darkBg text-darkBg" />
+                                <span>{currentAnime.rating} MAL SCORE</span>
+                            </div>
+                            <span className="text-gray-500 font-medium">|</span>
+                            <span className="text-sm text-gray-300 font-semibold">{currentAnime.year}</span>
+                            <span className="text-gray-500 font-medium">|</span>
+                            <span className="text-sm text-gray-300 font-semibold">{currentAnime.episodes} Episodes</span>
                         </div>
                     </div>
                 </div>

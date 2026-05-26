@@ -11,16 +11,15 @@ const CheckIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
 );
 
-const PlayCircleIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-white hover:text-animePurple-light transition-colors"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon></svg>
-);
-
 window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myList }) {
     if (!anime) return null;
     const isBookmarked = myList.includes(anime.id);
 
     return (
-        <div className="w-[150px] sm:w-[190px] group/card relative flex flex-col space-y-2 cursor-pointer bg-darkCard/30 rounded-lg p-2 border border-animePurple/5 hover:border-animePurple/40 anime-card-hover">
+        <div 
+            onClick={() => onCardClick(anime)}
+            className="w-[150px] sm:w-[190px] group/card relative flex flex-col space-y-2 cursor-pointer bg-darkCard/30 rounded-lg p-2 border border-animePurple/5 hover:border-animePurple/40 anime-card-hover"
+        >
             
             {/* Poster Image frame with hover zoom */}
             <div className="relative h-[210px] sm:h-[265px] rounded-md overflow-hidden img-zoom-container bg-darkCard/90">
@@ -32,8 +31,8 @@ window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myLi
                 />
                 
                 {/* Neon Yellow Star Badge */}
-                <div className="absolute top-2 left-2 flex items-center space-x-1 glass-effect px-2 py-0.5 rounded text-[10px] font-bold text-animeYellow">
-                    <StarIcon className="w-3.5 h-3.5 fill-animeYellow text-animeYellow" />
+                <div className="absolute top-2 left-2 flex items-center space-x-1 bg-animeYellow text-darkBg font-orbitron font-extrabold px-2 py-0.5 rounded text-[11px] shadow-lg shadow-animeYellow/25 border border-animeYellow/30 tracking-wide">
+                    <StarIcon className="w-3 h-3 fill-darkBg text-darkBg" />
                     <span>{anime.rating}</span>
                 </div>
 
@@ -48,11 +47,6 @@ window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myLi
                         >
                             {isBookmarked ? <CheckIcon /> : <PlusIcon />}
                         </button>
-                    </div>
-
-                    {/* Card middle elements (Large Play Ring) */}
-                    <div className="flex justify-center" onClick={() => onCardClick(anime)}>
-                        <PlayCircleIcon />
                     </div>
 
                     {/* Card bottom details */}
@@ -70,7 +64,7 @@ window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myLi
             </div>
 
             {/* Title and stats label */}
-            <div className="space-y-0.5 text-left" onClick={() => onCardClick(anime)}>
+            <div className="space-y-0.5 text-left">
                 <h3 className="text-xs sm:text-sm font-semibold text-gray-200 line-clamp-1 group-hover/card:text-animePurple transition-colors duration-200 font-poppins">
                     {anime.title}
                 </h3>

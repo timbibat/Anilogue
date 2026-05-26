@@ -17,8 +17,8 @@ const InfoIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
 );
 
-const StarIcon = () => (
-    <svg className="w-4 h-4 fill-animeYellow text-animeYellow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+const StarIcon = ({ className = "w-4 h-4 fill-animeYellow text-animeYellow" }) => (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 );
 
 window.HeroBanner = function HeroBanner({ featuredList = [], onCardClick, toggleBookmark, myList }) {
@@ -87,11 +87,10 @@ window.HeroBanner = function HeroBanner({ featuredList = [], onCardClick, toggle
                         {activeHero.title}
                     </h1>
 
-                    {/* Ratings, Year info row */}
                     <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-300">
-                        <span className="flex items-center space-x-1.5 bg-yellow-500/10 text-animeYellow-neon border border-yellow-500/20 px-2.5 py-1 rounded-md">
-                            <StarIcon />
-                            <span>{activeHero.rating} Score</span>
+                        <span className="flex items-center space-x-1.5 bg-animeYellow text-darkBg border border-animeYellow/30 px-2.5 py-1 rounded font-orbitron font-black shadow-lg shadow-animeYellow/25">
+                            <StarIcon className="w-3.5 h-3.5 fill-darkBg text-darkBg" />
+                            <span>{activeHero.rating} SCORE</span>
                         </span>
                         <span>{activeHero.year}</span>
                         <span className="text-animePurple-light font-orbitron tracking-wide">{activeHero.type}</span>
@@ -110,7 +109,7 @@ window.HeroBanner = function HeroBanner({ featuredList = [], onCardClick, toggle
                             className="bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron text-xs font-bold tracking-widest px-6 sm:px-8 py-3 rounded-md hover:from-purple-500 hover:to-purple-700 active:scale-95 transition-all duration-300 shadow-neon-purple shadow-animePurple/20 flex items-center space-x-2 cursor-pointer"
                         >
                             <PlayIcon className="w-4.5 h-4.5" />
-                            <span>WATCH NOW</span>
+                            <span>VIEW DETAILS</span>
                         </button>
                         
                         <button 
