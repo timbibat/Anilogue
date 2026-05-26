@@ -16,6 +16,10 @@ jobs:
       - name: Inject Secure Environment Keys
         run: |
           echo "MAL_CLIENT_ID=${{ secrets.MAL_CLIENT_ID }}" > .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
 
       - name: Deploy via FTP to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
