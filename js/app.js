@@ -44,19 +44,25 @@ window.App = function App() {
     const [apiUnconfigured, setApiUnconfigured] = useState(false);
     const [networkError, setNetworkError] = useState(false);
 
-    // Watchlist Bookmarks (LocalStorage)
-    const [myList, setMyList] = useState(() => {
-        const saved = localStorage.getItem("anilogue_mylist_live");
-        return saved ? JSON.parse(saved) : [];
-    });
+    // Watchlist Bookmarks (per-account from database, empty until auth check)
+    const [myList, setMyList] = useState([]);
 
     // Bookmarked Anime detailed objects loaded from API as needed
     const [myListDetails, setMyListDetails] = useState([]);
     const [mylistLoading, setMylistLoading] = useState(false);
 
-    useEffect(() => {
-        localStorage.setItem("anilogue_mylist_live", JSON.stringify(myList));
-    }, [myList]);
+    // Helper: Load watchlist IDs from the database for the current local user
+    const loadWatchlistFromDB = async () => {
+        try {
+            const dbData = await apiService.getDBWatchlist();
+            if (dbData && dbData.success && dbData.watchlist) {
+                const dbIds = dbData.watchlist.map(item => parseInt(item.media_id));
+                setMyList(dbIds);
+            }
+        } catch (e) {
+            console.error("Failed to load watchlist from DB:", e);
+        }
+    };
 
     // Fetch watchlist details dynamically when myList changes or tab changes to mylist
     useEffect(() => {
@@ -118,6 +124,8 @@ window.App = function App() {
                         setAuthType('local');
                         setUsername(localSession.user.username);
                         setUserPicture("");
+                        // Load this user's watchlist from the database
+                        await loadWatchlistFromDB();
                         return; // Local user found, no need to check MAL
                     }
                 }
@@ -258,11 +266,13 @@ window.App = function App() {
         } catch (e) {
             console.error("Logout API call failed:", e);
         }
-        // Clear local state and reload
+        // Clear all user state including watchlist
         setIsLoggedIn(false);
         setAuthType(null);
         setUsername("");
         setUserPicture("");
+        setMyList([]);
+        setMyListDetails([]);
         window.location.reload();
     };
 
@@ -590,12 +600,16 @@ window.App = function App() {
             {showLoginModal && (
                 <LoginModal
                     onClose={() => setShowLoginModal(false)}
-                    onLoginSuccess={(user, loginAuthType) => {
+                    onLoginSuccess={async (user, loginAuthType) => {
                         setIsLoggedIn(true);
                         setAuthType(loginAuthType || 'local');
                         setUsername(user);
                         setUserPicture("");
                         setShowLoginModal(false);
+                        // Load this user's saved watchlist from database
+                        if (loginAuthType === 'local') {
+                            await loadWatchlistFromDB();
+                        }
                     }}
                 />
             )}

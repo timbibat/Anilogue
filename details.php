@@ -40,22 +40,27 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
         const [authType, setAuthType] = useState(null); // 'local' | 'mal' | null
         const [username, setUsername] = useState("");
         const [userPicture, setUserPicture] = useState("");
-        const [myList, setMyList] = useState(() => {
-            const saved = localStorage.getItem("anilogue_mylist_live");
-            return saved ? JSON.parse(saved) : [];
-        });
-        const [myMangaList, setMyMangaList] = useState(() => {
-            const saved = localStorage.getItem("anilogue_mymangalist_live");
-            return saved ? JSON.parse(saved) : [];
-        });
+        const [myList, setMyList] = useState([]);
+        const [myMangaList, setMyMangaList] = useState([]);
 
-        useEffect(() => {
-            localStorage.setItem("anilogue_mylist_live", JSON.stringify(myList));
-        }, [myList]);
-
-        useEffect(() => {
-            localStorage.setItem("anilogue_mymangalist_live", JSON.stringify(myMangaList));
-        }, [myMangaList]);
+        // Helper: Load watchlist IDs from the database for the current local user
+        const loadWatchlistFromDB = async () => {
+            try {
+                const dbData = await apiService.getDBWatchlist();
+                if (dbData && dbData.success && dbData.watchlist) {
+                    const animeIds = dbData.watchlist
+                        .filter(item => item.media_type === 'anime')
+                        .map(item => parseInt(item.media_id));
+                    const mangaIds = dbData.watchlist
+                        .filter(item => item.media_type === 'manga')
+                        .map(item => parseInt(item.media_id));
+                    setMyList(animeIds);
+                    setMyMangaList(mangaIds);
+                }
+            } catch (e) {
+                console.error("Failed to load watchlist from DB:", e);
+            }
+        };
 
         // Check local DB session first, then MAL OAuth
         useEffect(() => {
@@ -69,6 +74,8 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                             setAuthType('local');
                             setUsername(localSession.user.username);
                             setUserPicture("");
+                            // Load this user's watchlist from the database
+                            await loadWatchlistFromDB();
                             return;
                         }
                     }
@@ -148,6 +155,8 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
             setAuthType(null);
             setUsername("");
             setUserPicture("");
+            setMyList([]);
+            setMyMangaList([]);
             window.location.reload();
         };
 
@@ -191,12 +200,16 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 {showLoginModal && (
                     <LoginModal 
                         onClose={() => setShowLoginModal(false)}
-                        onLoginSuccess={(user, loginAuthType) => {
+                        onLoginSuccess={async (user, loginAuthType) => {
                             setIsLoggedIn(true);
                             setAuthType(loginAuthType || 'local');
                             setUsername(user);
                             setUserPicture("");
                             setShowLoginModal(false);
+                            // Load this user's saved watchlist from database
+                            if (loginAuthType === 'local') {
+                                await loadWatchlistFromDB();
+                            }
                         }}
                     />
                 )}
