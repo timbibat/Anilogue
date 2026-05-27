@@ -47,18 +47,28 @@ window.App = function App() {
 
     // Watchlist Bookmarks (per-account from database, empty until auth check)
     const [myList, setMyList] = useState([]);
+    const [myMangaList, setMyMangaList] = useState([]);
 
-    // Bookmarked Anime detailed objects loaded from API as needed
+    // Bookmarked detailed objects loaded from API as needed
     const [myListDetails, setMyListDetails] = useState([]);
     const [mylistLoading, setMylistLoading] = useState(false);
+    const [myMangaListDetails, setMyMangaListDetails] = useState([]);
+    const [mymangaListLoading, setMymangaListLoading] = useState(false);
+    const [mylistSubTab, setMylistSubTab] = useState("anime"); // 'anime' | 'manga'
 
     // Helper: Load watchlist IDs from the database for the current local user
     const loadWatchlistFromDB = async () => {
         try {
             const dbData = await apiService.getDBWatchlist();
             if (dbData && dbData.success && dbData.watchlist) {
-                const dbIds = dbData.watchlist.map(item => parseInt(item.media_id));
-                setMyList(dbIds);
+                const animeIds = dbData.watchlist
+                    .filter(item => item.media_type === 'anime')
+                    .map(item => parseInt(item.media_id));
+                const mangaIds = dbData.watchlist
+                    .filter(item => item.media_type === 'manga')
+                    .map(item => parseInt(item.media_id));
+                setMyList(animeIds);
+                setMyMangaList(mangaIds);
             }
         } catch (e) {
             console.error("Failed to load watchlist from DB:", e);
@@ -69,6 +79,7 @@ window.App = function App() {
     useEffect(() => {
         if (!isLoggedIn) {
             const savedList = localStorage.getItem("guestWatchlist");
+            const savedMangaList = localStorage.getItem("guestMangaWatchlist");
             if (savedList) {
                 try {
                     setMyList(JSON.parse(savedList));
@@ -76,15 +87,23 @@ window.App = function App() {
                     console.error("Failed to parse guest watchlist:", e);
                 }
             }
+            if (savedMangaList) {
+                try {
+                    setMyMangaList(JSON.parse(savedMangaList));
+                } catch (e) {
+                    console.error("Failed to parse guest manga watchlist:", e);
+                }
+            }
         }
     }, [isLoggedIn]);
 
-    // Save guest watchlist to localStorage when myList changes if not logged in
+    // Save guest watchlist to localStorage when myList/myMangaList changes if not logged in
     useEffect(() => {
         if (!isLoggedIn) {
             localStorage.setItem("guestWatchlist", JSON.stringify(myList));
+            localStorage.setItem("guestMangaWatchlist", JSON.stringify(myMangaList));
         }
-    }, [myList, isLoggedIn]);
+    }, [myList, myMangaList, isLoggedIn]);
 
     // Fetch watchlist details dynamically when myList changes or tab changes to mylist
     useEffect(() => {
@@ -120,6 +139,41 @@ window.App = function App() {
         fetchWatchlist();
         return () => { isMounted = false; };
     }, [myList, activeTab]);
+
+    // Fetch manga watchlist details dynamically when myMangaList changes or tab changes to mylist
+    useEffect(() => {
+        if (activeTab !== "mylist" || myMangaList.length === 0) return;
+
+        let isMounted = true;
+        async function fetchMangaWatchlist() {
+            setMymangaListLoading(true);
+            try {
+                const details = [];
+                for (const id of myMangaList) {
+                    try {
+                        const item = await apiService.getMangaDetails(id);
+                        if (item && !item.isUnconfigured) {
+                            details.push(item);
+                        }
+                    } catch (e) {
+                        console.error(`Error loading detail for manga bookmark ${id}:`, e);
+                    }
+                }
+                if (isMounted) {
+                    setMyMangaListDetails(details);
+                }
+            } catch (err) {
+                console.error("Error updating manga watchlist:", err);
+            } finally {
+                if (isMounted) {
+                    setMymangaListLoading(false);
+                }
+            }
+        }
+
+        fetchMangaWatchlist();
+        return () => { isMounted = false; };
+    }, [myMangaList, activeTab]);
 
     // Fetch initial homepage categories
     useEffect(() => {
@@ -276,6 +330,7 @@ window.App = function App() {
         } else {
             // For Guest users, update state directly from localStorage
             const savedList = localStorage.getItem("guestWatchlist");
+            const savedMangaList = localStorage.getItem("guestMangaWatchlist");
             if (savedList) {
                 try {
                     setMyList(JSON.parse(savedList));
@@ -284,6 +339,15 @@ window.App = function App() {
                 }
             } else {
                 setMyList([]);
+            }
+            if (savedMangaList) {
+                try {
+                    setMyMangaList(JSON.parse(savedMangaList));
+                } catch (e) {
+                    console.error("Failed to parse guest manga watchlist:", e);
+                }
+            } else {
+                setMyMangaList([]);
             }
         }
     };
@@ -377,7 +441,7 @@ window.App = function App() {
                 userPicture={userPicture}
                 onLoginClick={() => setShowLoginModal(true)}
                 onLogout={handleLogout}
-                bookmarkCount={myList.length}
+                bookmarkCount={myList.length + myMangaList.length}
             />
 
             {/* Dynamic Page Views */}
@@ -589,32 +653,82 @@ window.App = function App() {
                                     <p className="text-xs text-gray-400 font-medium">Your customized watchlists synced to storage</p>
                                 </div>
 
-                                {myList.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-24 text-gray-500 space-y-4">
-                                        <div className="w-16 h-16 rounded-full bg-darkCard flex items-center justify-center border border-animePurple/20 text-animePurple shadow-neon-purple shadow-animePurple/10">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                                {/* Premium Category Sub-Tabs Selector */}
+                                <div className="flex gap-4 border-b border-animePurple/15 mb-8 pb-1 font-orbitron text-xs sm:text-sm font-bold">
+                                    <button 
+                                        onClick={() => setMylistSubTab("anime")}
+                                        className={`pb-3 px-2 uppercase tracking-wider relative cursor-pointer transition-colors flex items-center space-x-2 ${mylistSubTab === 'anime' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        <span>Anime Watchlist</span>
+                                        <span className="bg-animePurple text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">{myList.length}</span>
+                                        {mylistSubTab === 'anime' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-animePurple to-transparent"></span>}
+                                    </button>
+                                    <button 
+                                        onClick={() => setMylistSubTab("manga")}
+                                        className={`pb-3 px-2 uppercase tracking-wider relative cursor-pointer transition-colors flex items-center space-x-2 ${mylistSubTab === 'manga' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                                    >
+                                        <span>Manga Watchlist</span>
+                                        <span className="bg-animePurple text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">{myMangaList.length}</span>
+                                        {mylistSubTab === 'manga' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-animePurple to-transparent"></span>}
+                                    </button>
+                                </div>
+
+                                {mylistSubTab === "anime" ? (
+                                    myList.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-24 text-gray-500 space-y-4">
+                                            <div className="w-16 h-16 rounded-full bg-darkCard flex items-center justify-center border border-animePurple/20 text-animePurple shadow-neon-purple shadow-animePurple/10">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-base font-bold font-orbitron tracking-widest text-white block text-center">YOUR ANIME WATCHLIST IS EMPTY</span>
+                                                <span className="text-xs block text-center">Explore home page rows, hover posters, and tap '+' to fill your anime bookmarks.</span>
+                                            </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <span className="text-base font-bold font-orbitron tracking-widest text-white block">YOUR WATCHLIST IS EMPTY</span>
-                                            <span className="text-xs block">Explore home page rows, hover anime posters, and tap '+' to fill your bookmarks list.</span>
+                                    ) : mylistLoading ? (
+                                        <div className="flex items-center justify-center py-24">
+                                            <div className="w-12 h-12 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
                                         </div>
-                                    </div>
-                                ) : mylistLoading ? (
-                                    <div className="flex items-center justify-center py-24">
-                                        <div className="w-12 h-12 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 animate-fade-in">
+                                            {myListDetails.map(anime => (
+                                                <AnimeCard
+                                                    key={anime.id}
+                                                    anime={anime}
+                                                    onCardClick={handleAnimeSelect}
+                                                    toggleBookmark={toggleBookmark}
+                                                    myList={myList}
+                                                />
+                                            ))}
+                                        </div>
+                                    )
                                 ) : (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
-                                        {myListDetails.map(anime => (
-                                            <AnimeCard
-                                                key={anime.id}
-                                                anime={anime}
-                                                onCardClick={handleAnimeSelect}
-                                                toggleBookmark={toggleBookmark}
-                                                myList={myList}
-                                            />
-                                        ))}
-                                    </div>
+                                    myMangaList.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-24 text-gray-500 space-y-4">
+                                            <div className="w-16 h-16 rounded-full bg-darkCard flex items-center justify-center border border-animePurple/20 text-animePurple shadow-neon-purple shadow-animePurple/10">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <span className="text-base font-bold font-orbitron tracking-widest text-white block text-center">YOUR MANGA WATCHLIST IS EMPTY</span>
+                                                <span className="text-xs block text-center">Explore home page rows, hover manga posters, and tap '+' to fill your manga bookmarks.</span>
+                                            </div>
+                                        </div>
+                                    ) : mymangaListLoading ? (
+                                        <div className="flex items-center justify-center py-24">
+                                            <div className="w-12 h-12 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4 animate-fade-in">
+                                            {myMangaListDetails.map(manga => (
+                                                <AnimeCard
+                                                    key={manga.id}
+                                                    anime={manga}
+                                                    onCardClick={handleAnimeSelect}
+                                                    toggleBookmark={(id) => toggleBookmark(id, 'manga')}
+                                                    myList={myMangaList}
+                                                />
+                                            ))}
+                                        </div>
+                                    )
                                 )}
                             </section>
                         )}

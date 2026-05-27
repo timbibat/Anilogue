@@ -89,10 +89,11 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
 
                 // Add to guest list
                 if (!isBookmarked) {
-                    const savedList = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
+                    const key = item.type === "manga" ? "guestMangaWatchlist" : "guestWatchlist";
+                    const savedList = localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : [];
                     if (!savedList.includes(item.id)) {
                         savedList.push(item.id);
-                        localStorage.setItem("guestWatchlist", JSON.stringify(savedList));
+                        localStorage.setItem(key, JSON.stringify(savedList));
                     }
                 }
                 alert("Successfully saved to your local guest watchlist!");
@@ -149,9 +150,10 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                 localStorage.setItem("guestWatchlistDetails", JSON.stringify(savedDetails));
 
                 // Remove from list
-                const savedList = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
+                const key = item.type === "manga" ? "guestMangaWatchlist" : "guestWatchlist";
+                const savedList = localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : [];
                 const updatedList = savedList.filter(id => id !== item.id);
-                localStorage.setItem("guestWatchlist", JSON.stringify(updatedList));
+                localStorage.setItem(key, JSON.stringify(updatedList));
 
                 alert("Removed from local guest watchlist successfully!");
                 onSaveSuccess();
