@@ -6,10 +6,11 @@ require_once 'config.php';
 include 'includes/header.php';
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
+$from = isset($_GET['from']) ? $_GET['from'] : '';
 ?>
 
 <!-- React Mount Node -->
-<div id="root" data-anime-id="<?php echo $id; ?>" data-media-type="<?php echo htmlspecialchars($type); ?>">
+<div id="root" data-anime-id="<?php echo $id; ?>" data-media-type="<?php echo htmlspecialchars($type); ?>" data-from="<?php echo htmlspecialchars($from); ?>">
     <div class="flex items-center justify-center min-h-screen flex-col space-y-4">
         <div class="w-16 h-16 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
         <p class="font-orbitron tracking-widest text-animePurple text-lg animate-pulse">SYNCHRONIZING PROFILE...</p>
@@ -96,6 +97,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
 
         const animeId = parseInt(document.getElementById('root').getAttribute('data-anime-id'));
         const mediaType = document.getElementById('root').getAttribute('data-media-type') || 'anime';
+        const fromTab = document.getElementById('root').getAttribute('data-from') || '';
 
         const toggleBookmark = async (id, itemType = mediaType) => {
             if (itemType === 'manga') {
@@ -165,12 +167,12 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                 <Navbar 
                     activeTab="" 
                     setActiveTab={(tab) => {
-                        window.location.href = 'index.php?tab=' + tab;
+                        window.location.href = './index.php?tab=' + tab;
                     }} 
                     searchQuery=""
                     setSearchQuery={(query) => {
                         if (query.trim() !== "") {
-                            window.location.href = 'index.php?q=' + encodeURIComponent(query);
+                            window.location.href = './index.php?q=' + encodeURIComponent(query);
                         }
                     }}
                     isLoggedIn={isLoggedIn}
@@ -188,7 +190,7 @@ $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
                         isLoggedIn={isLoggedIn}
                         authType={authType}
                         onClose={() => {
-                            window.location.href = 'index.php?tab=' + (mediaType === 'manga' ? 'manga' : 'home');
+                            window.location.href = './index.php?tab=' + (fromTab || (mediaType === 'manga' ? 'manga' : 'home'));
                         }}
                         toggleBookmark={toggleBookmark}
                         myList={mediaType === 'manga' ? myMangaList : myList}

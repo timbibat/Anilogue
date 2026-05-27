@@ -22,7 +22,7 @@ window.App = function App() {
     // Modals & Authentication
     const handleAnimeSelect = (anime) => {
         const type = (anime.type && ['Manga', 'Novel', 'Lightnovel', 'Oneshot', 'Doujin', 'Manhwa', 'Manhua'].includes(anime.type)) || anime.chapters !== undefined ? 'manga' : 'anime';
-        window.location.href = `details.php?type=${type}&id=${anime.id}`;
+        window.location.href = `details.php?type=${type}&id=${anime.id}&from=${activeTab}`;
     };
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -186,6 +186,27 @@ window.App = function App() {
         loadHomeData();
         return () => { isMounted = false; };
     }, []);
+
+    // Sync active tab and search query with the browser address bar dynamically without reloading
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        
+        if (activeTab === "home") {
+            params.delete("tab");
+        } else {
+            params.set("tab", activeTab);
+        }
+        
+        if (searchQuery.trim() === "") {
+            params.delete("q");
+        } else {
+            params.set("q", searchQuery);
+        }
+        
+        const newSearch = params.toString();
+        const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "");
+        window.history.replaceState(null, "", newUrl);
+    }, [activeTab, searchQuery]);
 
 
 

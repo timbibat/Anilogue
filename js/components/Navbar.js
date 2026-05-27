@@ -13,6 +13,11 @@ const CloseIcon = () => (
 window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearchQuery, isLoggedIn, username, userPicture, onLoginClick, onLogout, bookmarkCount }) {
     const [scrolled, setScrolled] = useState(false);
     const [searchFocused, setSearchFocused] = useState(false);
+    const [localQuery, setLocalQuery] = useState(searchQuery || "");
+
+    useEffect(() => {
+        setLocalQuery(searchQuery || "");
+    }, [searchQuery]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -77,19 +82,30 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                 <div className="flex items-center space-x-4">
                     
                     {/* Interactive Search Bar */}
-                    <div className={`relative flex items-center bg-darkCard/60 rounded-full border border-animePurple/20 px-3.5 py-1.5 transition-all duration-300 ${searchFocused || searchQuery ? 'w-44 sm:w-64 border-animePurple shadow-neon-purple/20' : 'w-36 sm:w-48'}`}>
+                    <div className={`relative flex items-center bg-darkCard/60 rounded-full border border-animePurple/20 px-3.5 py-1.5 transition-all duration-300 ${searchFocused || localQuery ? 'w-44 sm:w-64 border-animePurple shadow-neon-purple/20' : 'w-36 sm:w-48'}`}>
                         <SearchIcon />
                         <input 
                             type="text" 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            value={localQuery}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setLocalQuery(val);
+                                if (!window.location.pathname.includes("details.php")) {
+                                    setSearchQuery(val);
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    setSearchQuery(localQuery);
+                                }
+                            }}
                             onFocus={() => setSearchFocused(true)}
                             onBlur={() => setSearchFocused(false)}
                             placeholder="Search catalog..." 
                             className="bg-transparent border-none outline-none text-xs text-white placeholder-gray-500 w-full ml-2 focus:ring-0"
                         />
-                        {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className="text-gray-400 hover:text-white cursor-pointer ml-1">
+                        {localQuery && (
+                            <button onClick={() => { setLocalQuery(""); setSearchQuery(""); }} className="text-gray-400 hover:text-white cursor-pointer ml-1">
                                 <CloseIcon />
                             </button>
                         )}
