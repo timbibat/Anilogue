@@ -22,103 +22,8 @@ const LockIcon = () => (
 );
 
 window.LoginModal = function LoginModal({ onClose, onLoginSuccess }) {
-    const [activeMode, setActiveMode] = useState("login"); // 'login' | 'register'
-    const [usernameField, setUsernameField] = useState("");
-    const [emailField, setEmailField] = useState("");
-    const [passwordField, setPasswordField] = useState("");
-    const [confirmPasswordField, setConfirmPasswordField] = useState("");
-    const [errorMsg, setErrorMsg] = useState("");
-    const [successMsg, setSuccessMsg] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const resetFields = () => {
-        setUsernameField("");
-        setEmailField("");
-        setPasswordField("");
-        setConfirmPasswordField("");
-        setErrorMsg("");
-        setSuccessMsg("");
-    };
-
-    const switchMode = (mode) => {
-        resetFields();
-        setActiveMode(mode);
-    };
-
     const handleMALRedirect = () => {
         window.location.href = 'api/auth.php?action=login';
-    };
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setErrorMsg("");
-        setSuccessMsg("");
-
-        if (usernameField.trim() === "") {
-            setErrorMsg("Username or email is required.");
-            return;
-        }
-        if (passwordField.length < 6) {
-            setErrorMsg("Password must be at least 6 characters.");
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const res = await window.apiService.loginLocalUser(usernameField, passwordField);
-            if (res.success) {
-                setSuccessMsg("Login successful! Redirecting...");
-                setTimeout(() => {
-                    onLoginSuccess(res.user.username, 'local');
-                }, 600);
-            } else {
-                setErrorMsg(res.error || "Login failed. Please try again.");
-            }
-        } catch (err) {
-            setErrorMsg("Connection error. Please check your network.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleRegister = async (e) => {
-        e.preventDefault();
-        setErrorMsg("");
-        setSuccessMsg("");
-
-        if (usernameField.trim().length < 3) {
-            setErrorMsg("Username must be at least 3 characters.");
-            return;
-        }
-        if (!emailField.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            setErrorMsg("Please enter a valid email address.");
-            return;
-        }
-        if (passwordField.length < 6) {
-            setErrorMsg("Password must be at least 6 characters.");
-            return;
-        }
-        if (passwordField !== confirmPasswordField) {
-            setErrorMsg("Passwords do not match.");
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const res = await window.apiService.registerLocalUser(usernameField, emailField, passwordField);
-            if (res.success) {
-                setSuccessMsg("Account created! Logging you in...");
-                setTimeout(() => {
-                    onLoginSuccess(res.user.username, 'local');
-                }, 600);
-            } else {
-                setErrorMsg(res.error || "Registration failed. Please try again.");
-            }
-        } catch (err) {
-            setErrorMsg("Connection error. Please check your network.");
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
     return (
@@ -133,197 +38,51 @@ window.LoginModal = function LoginModal({ onClose, onLoginSuccess }) {
                 </button>
 
                 {/* Brand Header */}
-                <div className="mb-5">
-                    <span className="font-orbitron font-black text-2xl tracking-widest text-white">ANI<span className="text-animePurple">LOGUE</span></span>
-                    <p className="text-xs text-gray-400 mt-1">
-                        {activeMode === "login" ? "Sign in to your account" : "Create your Anilogue account"}
+                <div className="mb-6 space-y-2">
+                    <span className="font-orbitron font-black text-2xl tracking-widest text-white block">ANI<span className="text-animePurple">LOGUE</span></span>
+                    <h3 className="font-orbitron text-xs font-bold text-animePurple-light tracking-widest uppercase">Cloud Synchronization</h3>
+                </div>
+
+                <div className="text-left text-xs text-gray-300 space-y-4 mb-6 leading-relaxed font-semibold border-b border-animePurple/15 pb-5">
+                    <p>
+                        💡 By default, your watchlists and progress are saved locally as a <strong className="text-white">Guest Account</strong> in this browser.
+                    </p>
+                    <p>
+                        🔗 If you wish to access your watchlist on <strong className="text-white">other devices</strong> or <strong className="text-white">sync scores/ratings</strong>, please sign in with your official MyAnimeList account.
                     </p>
                 </div>
 
-                {/* Login / Register Tab Switcher */}
-                <div className="flex mb-6 bg-darkBg/80 rounded-lg p-1 border border-animePurple/15">
-                    <button
-                        onClick={() => switchMode("login")}
-                        className={`flex-1 py-2 rounded-md text-xs font-orbitron font-bold tracking-wider transition-all duration-200 cursor-pointer ${
-                            activeMode === "login"
-                                ? "bg-animePurple text-white shadow-lg shadow-animePurple/30"
-                                : "text-gray-400 hover:text-white"
-                        }`}
+                {/* Primary MAL Actions */}
+                <div className="space-y-3.5">
+                    <button 
+                        type="button"
+                        onClick={handleMALRedirect}
+                        className="w-full py-3.5 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md hover:from-purple-500 hover:to-purple-700 active:scale-98 transition-all duration-300 shadow-neon-purple shadow-animePurple/25 cursor-pointer flex items-center justify-center space-x-3 border border-animePurple/40"
                     >
-                        SIGN IN
+                        <MALLogoIcon />
+                        <span>SIGN IN WITH MYANIMELIST</span>
                     </button>
-                    <button
-                        onClick={() => switchMode("register")}
-                        className={`flex-1 py-2 rounded-md text-xs font-orbitron font-bold tracking-wider transition-all duration-200 cursor-pointer ${
-                            activeMode === "register"
-                                ? "bg-animePurple text-white shadow-lg shadow-animePurple/30"
-                                : "text-gray-400 hover:text-white"
-                        }`}
+
+                    <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-white/5"></div>
+                        <span className="flex-shrink mx-4 text-[9px] font-orbitron text-gray-500 font-bold uppercase tracking-wider">No MAL Account?</span>
+                        <div className="flex-grow border-t border-white/5"></div>
+                    </div>
+
+                    <a 
+                        href="https://myanimelist.net/register.php"
+                        target="_blank"
+                        rel="noopener"
+                        className="w-full py-3 bg-darkBg hover:bg-white/5 border border-animePurple/30 text-animePurple-light hover:text-white font-orbitron font-bold text-xs tracking-wider rounded-md flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer text-center"
                     >
-                        REGISTER
-                    </button>
+                        <span>SIGN UP ON MYANIMELIST</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </a>
                 </div>
 
-                {/* ═══════ LOGIN FORM ═══════ */}
-                {activeMode === "login" && (
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-1.5 text-left">
-                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light flex items-center space-x-1.5">
-                                <UserIcon />
-                                <span>USERNAME OR EMAIL</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                value={usernameField}
-                                onChange={(e) => setUsernameField(e.target.value)}
-                                placeholder="Enter your username or email" 
-                                className="w-full bg-darkBg border border-animePurple/20 rounded-md px-3.5 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
-                                autoComplete="username"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5 text-left">
-                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light flex items-center space-x-1.5">
-                                <LockIcon />
-                                <span>PASSWORD</span>
-                            </label>
-                            <input 
-                                type="password" 
-                                value={passwordField}
-                                onChange={(e) => setPasswordField(e.target.value)}
-                                placeholder="••••••••" 
-                                className="w-full bg-darkBg border border-animePurple/20 rounded-md px-3.5 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
-                                autoComplete="current-password"
-                            />
-                        </div>
-
-                        {errorMsg && (
-                            <div className="text-xs font-semibold text-red-400 text-left bg-red-950/20 border border-red-900/35 px-3 py-2 rounded">
-                                {errorMsg}
-                            </div>
-                        )}
-
-                        {successMsg && (
-                            <div className="text-xs font-semibold text-green-400 text-left bg-green-950/20 border border-green-900/35 px-3 py-2 rounded">
-                                {successMsg}
-                            </div>
-                        )}
-
-                        <button 
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full py-3.5 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md hover:from-purple-500 hover:to-purple-700 active:scale-98 transition-all duration-300 shadow-neon-purple shadow-animePurple/25 cursor-pointer disabled:opacity-50"
-                        >
-                            {isSubmitting ? 'SIGNING IN...' : 'SIGN IN'}
-                        </button>
-
-                        {/* Divider */}
-                        <div className="relative flex py-2 items-center">
-                            <div className="flex-grow border-t border-white/5"></div>
-                            <span className="flex-shrink mx-4 text-[9px] font-orbitron text-gray-500 font-bold uppercase tracking-wider">OR CONNECT WITH</span>
-                            <div className="flex-grow border-t border-white/5"></div>
-                        </div>
-
-                        {/* MAL OAuth Button */}
-                        <button 
-                            type="button"
-                            onClick={handleMALRedirect}
-                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-orbitron font-bold text-xs tracking-wider rounded-md flex items-center justify-center space-x-3 transition-all duration-300 shadow-lg shadow-blue-600/25 active:scale-98 cursor-pointer border border-blue-500/20"
-                        >
-                            <MALLogoIcon />
-                            <span>CONTINUE WITH MYANIMELIST</span>
-                        </button>
-                    </form>
-                )}
-
-                {/* ═══════ REGISTER FORM ═══════ */}
-                {activeMode === "register" && (
-                    <form onSubmit={handleRegister} className="space-y-3.5">
-                        <div className="space-y-1.5 text-left">
-                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light flex items-center space-x-1.5">
-                                <UserIcon />
-                                <span>USERNAME</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                value={usernameField}
-                                onChange={(e) => setUsernameField(e.target.value)}
-                                placeholder="Choose a username (min. 3 chars)" 
-                                className="w-full bg-darkBg border border-animePurple/20 rounded-md px-3.5 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
-                                autoComplete="username"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5 text-left">
-                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light flex items-center space-x-1.5">
-                                <MailIcon />
-                                <span>EMAIL ADDRESS</span>
-                            </label>
-                            <input 
-                                type="email" 
-                                value={emailField}
-                                onChange={(e) => setEmailField(e.target.value)}
-                                placeholder="yourname@email.com" 
-                                className="w-full bg-darkBg border border-animePurple/20 rounded-md px-3.5 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
-                                autoComplete="email"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5 text-left">
-                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light flex items-center space-x-1.5">
-                                <LockIcon />
-                                <span>PASSWORD</span>
-                            </label>
-                            <input 
-                                type="password" 
-                                value={passwordField}
-                                onChange={(e) => setPasswordField(e.target.value)}
-                                placeholder="Min. 6 characters" 
-                                className="w-full bg-darkBg border border-animePurple/20 rounded-md px-3.5 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
-                                autoComplete="new-password"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5 text-left">
-                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light flex items-center space-x-1.5">
-                                <LockIcon />
-                                <span>CONFIRM PASSWORD</span>
-                            </label>
-                            <input 
-                                type="password" 
-                                value={confirmPasswordField}
-                                onChange={(e) => setConfirmPasswordField(e.target.value)}
-                                placeholder="Re-enter your password" 
-                                className="w-full bg-darkBg border border-animePurple/20 rounded-md px-3.5 py-2.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
-                                autoComplete="new-password"
-                            />
-                        </div>
-
-                        {errorMsg && (
-                            <div className="text-xs font-semibold text-red-400 text-left bg-red-950/20 border border-red-900/35 px-3 py-2 rounded">
-                                {errorMsg}
-                            </div>
-                        )}
-
-                        {successMsg && (
-                            <div className="text-xs font-semibold text-green-400 text-left bg-green-950/20 border border-green-900/35 px-3 py-2 rounded">
-                                {successMsg}
-                            </div>
-                        )}
-
-                        <button 
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full py-3.5 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md hover:from-purple-500 hover:to-purple-700 active:scale-98 transition-all duration-300 shadow-neon-purple shadow-animePurple/25 cursor-pointer disabled:opacity-50"
-                        >
-                            {isSubmitting ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
-                        </button>
-
-                        <p className="text-[10px] text-gray-500 font-medium pt-1">
-                            By registering, your watchlist data will be saved securely to our database.
-                        </p>
-                    </form>
-                )}
+                <div className="text-[10px] text-gray-600 font-semibold pt-4">
+                    Secured by official MyAnimeList OAuth 2.0 PKCE protocol.
+                </div>
 
             </div>
         </div>

@@ -208,7 +208,7 @@ window.App = function App() {
         let isMounted = true;
 
         async function triggerGuestAndDBMerge() {
-            // 1. Merge Guest localStorage Watchlist
+            // Merge Guest localStorage Watchlist
             const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
             const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
             const guestDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
@@ -247,71 +247,26 @@ window.App = function App() {
                 localStorage.removeItem("guestWatchlistDetails");
             }
             
-            // 2. Merge Anilogue DB watchlist (from local registered account)
-            try {
-                const dbData = await apiService.getDBWatchlist();
-                if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
-                    console.log("Found Anilogue DB watchlist items. Auto-merging to MyAnimeList...");
-                    for (const item of dbData.watchlist) {
-                        try {
-                            const mediaId = parseInt(item.media_id);
-                            const type = item.media_type;
-                            const extra = { score: parseInt(item.score) || 0 };
-                            if (type === 'manga') {
-                                extra.num_chapters_read = parseInt(item.progress) || 0;
-                                extra.num_volumes_read = parseInt(item.volumes_progress) || 0;
-                            } else {
-                                extra.num_watched_episodes = parseInt(item.progress) || 0;
-                            }
-                            await apiService.updateMALListStatus(mediaId, item.status, type, extra);
-                            await apiService.deleteFromDBWatchlist(mediaId, type);
-                            mergedAny = true;
-                        } catch (e) {
-                            console.error(`Failed to merge DB item ${item.media_id} to MAL:`, e);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("Local DB merge check failed:", e);
-            }
-            
             if (mergedAny) {
-                alert("Successfully merged your local Anilogue watchlist items into your MyAnimeList account!");
+                alert("Successfully merged your local Guest Watchlist items into your MyAnimeList account!");
                 window.location.reload();
             }
         }
 
-        const checkForMergeableItems = async (currentIsLoggedIn, currentAuthType, hasLocalDB = false) => {
+        const checkForMergeableItems = async () => {
             const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
             const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
             if (guestAnime.length > 0 || guestManga.length > 0) {
                 setHasMergeableItems(true);
-                return;
+            } else {
+                setHasMergeableItems(false);
             }
-            
-            // Allow querying DB watchlist if logged in locally or in a combined MAL+Local session
-            if (hasLocalDB || (currentIsLoggedIn && currentAuthType === 'local')) {
-                try {
-                    const dbData = await apiService.getDBWatchlist();
-                    if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
-                        setHasMergeableItems(true);
-                        return;
-                    }
-                } catch (e) {
-                    console.error("Local DB check error:", e);
-                }
-            }
-            
-            setHasMergeableItems(false);
         };
 
-        // Check local database session first, then fall back to MAL OAuth
+        // Check active MyAnimeList user session
         async function checkUserAuth() {
             try {
-                // Fetch both local and MAL session statuses concurrently
-                const localSession = await apiService.getLocalUserSession();
                 const malUser = await apiService.getCurrentUser();
-                
                 if (isMounted && malUser && malUser.isLoggedIn) {
                     setIsLoggedIn(true);
                     setAuthType('mal');
@@ -321,24 +276,8 @@ window.App = function App() {
                     // Load live watchlist IDs from MyAnimeList
                     await loadWatchlistFromMAL();
                     
-                    // Scan for mergeable items (If also logged in locally, check DB watchlist too!)
-                    const hasLocalDB = localSession && localSession.isLoggedIn && localSession.authType === 'local';
-                    await checkForMergeableItems(true, 'mal', hasLocalDB);
-                    return;
-                }
-                
-                if (isMounted && localSession && localSession.isLoggedIn) {
-                    if (localSession.authType === 'local') {
-                        setIsLoggedIn(true);
-                        setAuthType('local');
-                        setUsername(localSession.user.username);
-                        setUserPicture("");
-                        // Load this user's watchlist from the database
-                        await loadWatchlistFromDB();
-                        
-                        await checkForMergeableItems(true, 'local', true);
-                        return;
-                    }
+                    // Scan for mergeable local Guest list items to present the merge option
+                    await checkForMergeableItems();
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
