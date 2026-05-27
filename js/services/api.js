@@ -251,5 +251,16 @@ window.apiService = {
             body: JSON.stringify({ media_id: mediaId, media_type: mediaType })
         });
         return await response.json();
+    },
+
+    /** Migrate watchlists (guest or local DB) to linked MAL profile */
+    migrateToMAL: async function(items = []) {
+        const response = await fetch('api/user.php?action=migrate_to_mal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ items: items })
+        });
+        return await response.json();
     }
 };
