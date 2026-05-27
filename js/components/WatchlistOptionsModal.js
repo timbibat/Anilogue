@@ -309,45 +309,32 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                                 </div>
                             )}
 
-                            {/* Score select row OR Continue with MAL */}
-                            {isLoggedIn && authType === 'mal' ? (
-                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                    <label className="text-gray-300 font-bold text-right pr-2">Your Score:</label>
-                                    <div className="relative">
-                                        <select 
-                                            value={score} 
-                                            onChange={(e) => setScore(parseInt(e.target.value) || 0)}
-                                            className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none appearance-none pr-8 focus:border-animePurple"
-                                        >
-                                            <option value="0">Select</option>
-                                            <option value="10">10 (Masterpiece)</option>
-                                            <option value="9">9 (Great)</option>
-                                            <option value="8">8 (Very Good)</option>
-                                            <option value="7">7 (Good)</option>
-                                            <option value="6">6 (Fine)</option>
-                                            <option value="5">5 (Average)</option>
-                                            <option value="4">4 (Bad)</option>
-                                            <option value="3">3 (Very Bad)</option>
-                                            <option value="2">2 (Horrible)</option>
-                                            <option value="1">1 (Appalling)</option>
-                                        </select>
-                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                                        </div>
+                            {/* Score select row */}
+                            <div className="grid grid-cols-[90px_1fr] items-center gap-2">
+                                <label className="text-gray-300 font-bold text-right pr-2">Your Score:</label>
+                                <div className="relative">
+                                    <select 
+                                        value={score} 
+                                        onChange={(e) => setScore(parseInt(e.target.value) || 0)}
+                                        className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none appearance-none pr-8 focus:border-animePurple"
+                                    >
+                                        <option value="0">Select</option>
+                                        <option value="10">10 (Masterpiece)</option>
+                                        <option value="9">9 (Great)</option>
+                                        <option value="8">8 (Very Good)</option>
+                                        <option value="7">7 (Good)</option>
+                                        <option value="6">6 (Fine)</option>
+                                        <option value="5">5 (Average)</option>
+                                        <option value="4">4 (Bad)</option>
+                                        <option value="3">3 (Very Bad)</option>
+                                        <option value="2">2 (Horrible)</option>
+                                        <option value="1">1 (Appalling)</option>
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-[90px_1fr] items-center gap-2 pt-1 select-none">
-                                    <label className="text-gray-300 font-bold text-right pr-2">Your Score:</label>
-                                    <button
-                                        onClick={() => window.location.href = 'api/auth.php?action=login'}
-                                        className="w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-orbitron font-bold text-[10px] tracking-wider rounded flex items-center justify-center space-x-2 transition-all cursor-pointer border border-blue-500/20 active:scale-95 shadow-md shadow-blue-600/10"
-                                    >
-                                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1.85 14.82l-3.32-3.32a.74.74 0 111.05-1.05l2.27 2.27 5.09-5.09a.74.74 0 111.05 1.05l-5.61 5.61a.73.73 0 01-1.05 0z"/></svg>
-                                        <span>CONTINUE WITH MAL</span>
-                                    </button>
-                                </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Action buttons */}

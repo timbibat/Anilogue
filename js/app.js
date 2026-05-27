@@ -192,71 +192,7 @@ window.App = function App() {
         // Check local database session first, then fall back to MAL OAuth
         async function checkUserAuth() {
             try {
-                // Prioritize checking MAL OAuth session first to trigger migration redirects
-                const malUser = await apiService.getCurrentUser();
-                if (isMounted && malUser && malUser.isLoggedIn) {
-                    setIsLoggedIn(true);
-                    setAuthType('mal');
-                    setUsername(malUser.username);
-                    setUserPicture(malUser.picture || "");
-
-                    // ═══════════════════════════════════════════
-                    // AUTOMATIC WATCHLIST MIGRATION TO MAL
-                    // ═══════════════════════════════════════════
-                    
-                    // 1. Gather Guest LocalStorage items if they exist
-                    const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
-                    const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
-                    const guestDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
-                    
-                    let itemsToMigrate = [];
-                    guestAnime.forEach(id => {
-                        const detail = guestDetails[id] || {};
-                        itemsToMigrate.push({
-                            id: id,
-                            type: 'anime',
-                            status: detail.status || 'plan_to_watch',
-                            progress: detail.progress || 0,
-                            score: detail.score || 0
-                        });
-                    });
-                    guestManga.forEach(id => {
-                        const detail = guestDetails[id] || {};
-                        itemsToMigrate.push({
-                            id: id,
-                            type: 'manga',
-                            status: detail.status || 'plan_to_read',
-                            progress: detail.progress || 0,
-                            volumes_progress: detail.volumes_progress || 0,
-                            score: detail.score || 0
-                        });
-                    });
-
-                    // 2. Check if a local database user is currently logged in at the same time
-                    const localSession = await apiService.getLocalUserSession();
-                    const hasLocalSession = localSession && localSession.isLoggedIn && localSession.authType === 'local';
-
-                    if (itemsToMigrate.length > 0 || hasLocalSession) {
-                        try {
-                            const res = await apiService.migrateToMAL(itemsToMigrate);
-                            if (res && res.success && res.migrated_count > 0) {
-                                alert(`Successfully migrated ${res.migrated_count} watchlist entries from your local session directly to your official MyAnimeList profile!`);
-                            }
-                            
-                            // Clear guest local storage after migrating successfully
-                            if (itemsToMigrate.length > 0) {
-                                localStorage.removeItem("guestWatchlist");
-                                localStorage.removeItem("guestMangaWatchlist");
-                                localStorage.removeItem("guestWatchlistDetails");
-                            }
-                        } catch (migrateErr) {
-                            console.error("Watchlist migration to MAL failed:", migrateErr);
-                        }
-                    }
-                    return; // Transition fully completed
-                }
-
-                // Fall back to local DB session if not logged into MAL
+                // Check local DB session
                 const localSession = await apiService.getLocalUserSession();
                 if (isMounted && localSession && localSession.isLoggedIn) {
                     if (localSession.authType === 'local') {
@@ -266,8 +202,16 @@ window.App = function App() {
                         setUserPicture("");
                         // Load this user's watchlist from the database
                         await loadWatchlistFromDB();
-                        return; 
+                        return; // Local user found, no need to check MAL
                     }
+                }
+                // Fall back to MAL OAuth session
+                const malUser = await apiService.getCurrentUser();
+                if (isMounted && malUser && malUser.isLoggedIn) {
+                    setIsLoggedIn(true);
+                    setAuthType('mal');
+                    setUsername(malUser.username);
+                    setUserPicture(malUser.picture || "");
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
