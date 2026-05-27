@@ -77,7 +77,8 @@ if (isset($_GET['code'])) {
     curl_setopt($ch, CURLOPT_TIMEOUT, 15);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/x-www-form-urlencoded'
+        'Content-Type: application/x-www-form-urlencoded',
+        'Authorization: Basic ' . base64_encode(MAL_CLIENT_ID . ':')
     ]);
     
     $response = curl_exec($ch);
