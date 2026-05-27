@@ -55,7 +55,7 @@ window.AnimeSliderRow = function AnimeSliderRow({ title, subtitle, badgeText, an
                 {showLeftBtn && (
                     <button 
                         onClick={() => scroll('left')}
-                        className="absolute left-0 top-0 bottom-0 z-30 w-12 bg-darkBg/60 backdrop-blur-sm border-r border-animePurple/15 text-white flex items-center justify-center cursor-pointer hover:bg-animePurple/30 transition-all duration-300 opacity-0 group-hover/row:opacity-100"
+                        className="absolute left-1.5 md:left-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-darkBg/80 backdrop-blur-md border border-animePurple/25 text-white flex items-center justify-center cursor-pointer hover:bg-animePurple/40 transition-all duration-300 md:opacity-0 md:group-hover/row:opacity-100 shadow-[0_0_10px_rgba(139,92,246,0.35)]"
                     >
                         <ChevronLeftIcon />
                     </button>
@@ -84,7 +84,7 @@ window.AnimeSliderRow = function AnimeSliderRow({ title, subtitle, badgeText, an
                 {showRightBtn && (
                     <button 
                         onClick={() => scroll('right')}
-                        className="absolute right-0 top-0 bottom-0 z-30 w-12 bg-darkBg/60 backdrop-blur-sm border-l border-animePurple/15 text-white flex items-center justify-center cursor-pointer hover:bg-animePurple/30 transition-all duration-300 opacity-0 group-hover/row:opacity-100"
+                        className="absolute right-1.5 md:right-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 md:w-10 md:h-10 rounded-full bg-darkBg/80 backdrop-blur-md border border-animePurple/25 text-white flex items-center justify-center cursor-pointer hover:bg-animePurple/40 transition-all duration-300 md:opacity-0 md:group-hover/row:opacity-100 shadow-[0_0_10px_rgba(139,92,246,0.35)]"
                     >
                         <ChevronRightIcon />
                     </button>

@@ -54,7 +54,8 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
     };
 
     return (
-        <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b ${scrolled ? 'bg-darkBg/95 backdrop-blur-md shadow-lg border-animePurple/20 py-3.5' : 'bg-transparent border-transparent py-5'}`}>
+        <>
+            <header className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 border-b ${scrolled ? 'bg-darkBg/95 backdrop-blur-md shadow-lg border-animePurple/20 py-3.5' : 'bg-transparent border-transparent py-5'}`}>
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-between">
                 
                 {/* Brand Logo */}
@@ -168,91 +169,97 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
 
                 </div>
             </div>
+        </header>
 
-            {/* Premium, Glowing Full-Width Glassmorphic Mobile Menu Drawer */}
-            <div className={`fixed inset-0 top-[60px] sm:top-[76px] z-40 bg-darkBg/95 backdrop-blur-xl border-t border-animePurple/20 transition-all duration-500 lg:hidden flex flex-col justify-between ${mobileMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}>
-                {/* Drawer Links */}
-                <div className="flex-grow flex flex-col p-8 space-y-6 text-left select-none overflow-y-auto">
-                    <span className="font-orbitron text-[10px] font-bold text-animePurple-light tracking-widest uppercase border-b border-animePurple/15 pb-2">Browse Catalog</span>
-                    
-                    <button 
-                        onClick={() => handleMobileTabClick("home")}
-                        className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'home' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
-                    >
-                        <span>Home Portal</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
+        {/* Premium, Glowing Full-Width Glassmorphic Mobile Menu Drawer */}
+        <div 
+            className={`fixed inset-0 top-[60px] sm:top-[76px] z-[9999] bg-[#06010d]/96 border-t border-animePurple/20 transition-all duration-500 lg:hidden flex flex-col justify-between ${mobileMenuOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'}`}
+            style={{
+                WebkitBackdropFilter: 'blur(24px)',
+                backdropFilter: 'blur(24px)'
+            }}
+        >
+            {/* Drawer Links */}
+            <div className="flex-grow flex flex-col p-8 space-y-6 text-left select-none overflow-y-auto">
+                <span className="font-orbitron text-[10px] font-bold text-animePurple-light tracking-widest uppercase border-b border-animePurple/15 pb-2">Browse Catalog</span>
+                
+                <button 
+                    onClick={() => handleMobileTabClick("home")}
+                    className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'home' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
+                >
+                    <span>Home Portal</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
 
-                    <button 
-                        onClick={() => handleMobileTabClick("anime")}
-                        className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'anime' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
-                    >
-                        <span>Anime Catalog</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
+                <button 
+                    onClick={() => handleMobileTabClick("anime")}
+                    className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'anime' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
+                >
+                    <span>Anime Catalog</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
 
-                    <button 
-                        onClick={() => handleMobileTabClick("manga")}
-                        className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'manga' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
-                    >
-                        <span>Manga Catalog</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
+                <button 
+                    onClick={() => handleMobileTabClick("manga")}
+                    className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'manga' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
+                >
+                    <span>Manga Catalog</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
 
-                    <button 
-                        onClick={() => handleMobileTabClick("movies")}
-                        className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'movies' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
-                    >
-                        <span>Movies</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
+                <button 
+                    onClick={() => handleMobileTabClick("movies")}
+                    className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'movies' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
+                >
+                    <span>Movies</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
 
-                    <button 
-                        onClick={() => handleMobileTabClick("mylist")}
-                        className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'mylist' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
-                    >
-                        <div className="flex items-center space-x-3">
-                            <span>My Watchlist</span>
-                            {bookmarkCount > 0 && <span className="bg-animePurple text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md shadow-animePurple/20">{bookmarkCount}</span>}
-                        </div>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                </div>
-
-                {/* Mobile Drawer Account Footer area */}
-                <div className="p-8 bg-darkCard/30 border-t border-animePurple/15 text-left">
-                    {isLoggedIn ? (
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-11 h-11 rounded-full ring-2 ring-animePurple overflow-hidden">
-                                    <img src={userPicture || "images/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Account Connected</span>
-                                    <span className="text-sm font-bold text-white max-w-[150px] truncate">{username}</span>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={() => { onLogout(); setMobileMenuOpen(false); }}
-                                className="px-4 py-2 border border-red-500/30 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 rounded font-orbitron font-bold text-xs tracking-wider transition-all"
-                            >
-                                LOGOUT
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">Sync watchlists, ratings, scores, and episode progress across multiple devices securely.</p>
-                            <button 
-                                onClick={() => { onLoginClick(); setMobileMenuOpen(false); }}
-                                className="w-full py-3 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md flex items-center justify-center space-x-1.5 shadow-neon-purple shadow-animePurple/25"
-                            >
-                                <span>SIGN IN / SYNC MYLIST</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
+                <button 
+                    onClick={() => handleMobileTabClick("mylist")}
+                    className={`text-xl font-orbitron font-bold uppercase tracking-wider text-left transition-colors flex items-center justify-between ${activeTab === 'mylist' ? 'text-animePurple' : 'text-gray-300 hover:text-white'}`}
+                >
+                    <div className="flex items-center space-x-3">
+                        <span>My Watchlist</span>
+                        {bookmarkCount > 0 && <span className="bg-animePurple text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold shadow-md shadow-animePurple/20">{bookmarkCount}</span>}
+                    </div>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
 
-        </header>
-    );
+            {/* Mobile Drawer Account Footer area */}
+            <div className="p-8 bg-darkCard/30 border-t border-animePurple/15 text-left">
+                {isLoggedIn ? (
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-11 h-11 rounded-full ring-2 ring-animePurple overflow-hidden">
+                                <img src={userPicture || "images/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Account Connected</span>
+                                <span className="text-sm font-bold text-white max-w-[150px] truncate">{username}</span>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => { onLogout(); setMobileMenuOpen(false); }}
+                            className="px-4 py-2 border border-red-500/30 text-red-400 hover:text-white hover:bg-red-600 hover:border-red-600 rounded font-orbitron font-bold text-xs tracking-wider transition-all"
+                        >
+                            LOGOUT
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <p className="text-[10px] text-gray-500 font-semibold leading-relaxed">Sync watchlists, ratings, scores, and episode progress across multiple devices securely.</p>
+                        <button 
+                            onClick={() => { onLoginClick(); setMobileMenuOpen(false); }}
+                            className="w-full py-3 bg-gradient-to-r from-animePurple to-purple-800 text-white font-orbitron font-black text-xs tracking-widest rounded-md flex items-center justify-center space-x-1.5 shadow-neon-purple shadow-animePurple/25"
+                        >
+                            <span>SIGN IN / SYNC MYLIST</span>
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    </>
+);
 }
