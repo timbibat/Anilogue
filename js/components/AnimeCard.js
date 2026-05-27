@@ -14,6 +14,7 @@ const CheckIcon = () => (
 window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myList }) {
     if (!anime) return null;
     const isBookmarked = myList.includes(anime.id);
+    const mediaType = (anime.type && ['Manga', 'Novel', 'Lightnovel', 'Oneshot', 'Doujin', 'Manhwa', 'Manhua'].includes(anime.type)) || anime.chapters !== undefined ? 'manga' : 'anime';
 
     return (
         <div 
@@ -42,7 +43,7 @@ window.AnimeCard = function AnimeCard({ anime, onCardClick, toggleBookmark, myLi
                     {/* Card top elements (Bookmark button) */}
                     <div className="flex justify-end">
                         <button 
-                            onClick={(e) => { e.stopPropagation(); toggleBookmark(anime.id); }}
+                            onClick={(e) => { e.stopPropagation(); toggleBookmark(anime.id, mediaType); }}
                             className={`w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors border ${isBookmarked ? 'bg-animeYellow/10 border-animeYellow text-animeYellow' : 'bg-darkBg/50 border-white/20 text-white hover:border-animePurple hover:text-animePurple'}`}
                         >
                             {isBookmarked ? <CheckIcon /> : <PlusIcon />}
