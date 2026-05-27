@@ -5,26 +5,23 @@
 # Disable Directory Listings
 Options -Indexes
 
-# Rewrite engine configuration
+# Rewrite engine configuration (Explicit, high-compatibility clean URLs)
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Rewrite Sitemap to dynamic PHP generator
+    # 1. Rewrite sitemap.xml to dynamic PHP generator
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
     
-    # 1. Externally redirect explicit /filename.php to /filename (except API endpoints)
-    RewriteCond %{REQUEST_URI} !/api/ [NC]
-    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.*?)\.php[\s?] [NC]
-    RewriteRule ^ %1 [R=301,L]
-
-    # 2. Externally redirect direct requests for index to /
-    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.*?)/?index[\s?] [NC]
+    # 2. Redirect explicit requests for index.php to the root domain /
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.*?)/?index\.php[\s?] [NC]
     RewriteRule ^ %1/ [R=301,L]
-
-    # 3. Internally rewrite /filename to /filename.php if it exists as a file
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME}\.php -f
-    RewriteRule ^(.*?)/?$ $1.php [L]
+    
+    # 3. Redirect explicit requests for details.php to clean /details
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+(.*?)/?details\.php[\s?] [NC]
+    RewriteRule ^ %1/details [R=301,L]
+    
+    # 4. Internally map /details to details.php seamlessly (QSA preserves query strings)
+    RewriteRule ^details/?$ details.php [L,QSA]
 </IfModule>
 
 # Compress HTML, CSS, JavaScript, Text, XML and Fonts
