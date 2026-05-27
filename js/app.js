@@ -189,6 +189,80 @@ window.App = function App() {
 
         let isMounted = true;
 
+        async function triggerGuestAndDBMerge() {
+            // 1. Merge Guest localStorage Watchlist
+            const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
+            const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
+            const guestDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
+            
+            let mergedAny = false;
+            
+            if (guestAnime.length > 0 || guestManga.length > 0) {
+                console.log("Found guest watchlist items. Auto-merging to MyAnimeList...");
+                for (const id of guestAnime) {
+                    try {
+                        const detail = guestDetails[id] || {};
+                        await apiService.updateMALListStatus(id, detail.status || 'plan_to_watch', 'anime', {
+                            score: detail.score || 0,
+                            num_watched_episodes: detail.progress || 0
+                        });
+                        mergedAny = true;
+                    } catch (e) {
+                        console.error(`Failed to merge guest anime ${id} to MAL:`, e);
+                    }
+                }
+                for (const id of guestManga) {
+                    try {
+                        const detail = guestDetails[id] || {};
+                        await apiService.updateMALListStatus(id, detail.status || 'plan_to_read', 'manga', {
+                            score: detail.score || 0,
+                            num_chapters_read: detail.progress || 0,
+                            num_volumes_read: detail.volumes_progress || 0
+                        });
+                        mergedAny = true;
+                    } catch (e) {
+                        console.error(`Failed to merge guest manga ${id} to MAL:`, e);
+                    }
+                }
+                localStorage.removeItem("guestWatchlist");
+                localStorage.removeItem("guestMangaWatchlist");
+                localStorage.removeItem("guestWatchlistDetails");
+            }
+            
+            // 2. Merge Anilogue DB watchlist (from local registered account)
+            try {
+                const dbData = await apiService.getDBWatchlist();
+                if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
+                    console.log("Found Anilogue DB watchlist items. Auto-merging to MyAnimeList...");
+                    for (const item of dbData.watchlist) {
+                        try {
+                            const mediaId = parseInt(item.media_id);
+                            const type = item.media_type;
+                            const extra = { score: parseInt(item.score) || 0 };
+                            if (type === 'manga') {
+                                extra.num_chapters_read = parseInt(item.progress) || 0;
+                                extra.num_volumes_read = parseInt(item.volumes_progress) || 0;
+                            } else {
+                                extra.num_watched_episodes = parseInt(item.progress) || 0;
+                            }
+                            await apiService.updateMALListStatus(mediaId, item.status, type, extra);
+                            await apiService.deleteFromDBWatchlist(mediaId, type);
+                            mergedAny = true;
+                        } catch (e) {
+                            console.error(`Failed to merge DB item ${item.media_id} to MAL:`, e);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Local DB merge check failed:", e);
+            }
+            
+            if (mergedAny) {
+                alert("Successfully merged your local Anilogue watchlist items into your MyAnimeList account!");
+                window.location.reload();
+            }
+        }
+
         // Check local database session first, then fall back to MAL OAuth
         async function checkUserAuth() {
             try {
@@ -212,6 +286,9 @@ window.App = function App() {
                     setAuthType('mal');
                     setUsername(malUser.username);
                     setUserPicture(malUser.picture || "");
+                    
+                    // Trigger dynamic local/db watchlist merge automatically upon MAL auth detection
+                    await triggerGuestAndDBMerge();
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
