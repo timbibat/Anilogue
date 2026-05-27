@@ -30,6 +30,16 @@
   display: none; /* Chrome, Safari and Opera */
 }
 
+/* Hide standard number input spinners (up and down arrows) */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 /* Custom Glassmorphism backdrop filter */
 .glass-effect {
   background: rgba(18, 2, 36, 0.7);
@@ -38,21 +48,7 @@
   border: 1px solid rgba(139, 92, 246, 0.15);
 }
 
-.glass-effect-light {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
 /* Premium Glow effects */
-.neon-glow-purple {
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.35);
-}
-
-.neon-glow-yellow {
-  box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
-}
 
 .neon-border-purple {
   border-color: rgba(168, 85, 247, 0.5);
@@ -67,10 +63,6 @@
 /* Hero gradient overlays */
 .hero-gradient {
   background: linear-gradient(to top, #0b001a 0%, rgba(11, 0, 26, 0.8) 40%, rgba(11, 0, 26, 0) 100%);
-}
-
-.hero-gradient-left {
-  background: linear-gradient(to right, #0b001a 0%, rgba(11, 0, 26, 0.6) 50%, rgba(11, 0, 26, 0) 100%);
 }
 
 /* Anime card hover interactions */
@@ -103,10 +95,6 @@
 /* Text glow styles */
 .neon-text-purple {
   text-shadow: 0 0 10px rgba(168, 85, 247, 0.8), 0 0 20px rgba(168, 85, 247, 0.4);
-}
-
-.neon-text-yellow {
-  text-shadow: 0 0 8px rgba(234, 179, 8, 0.8), 0 0 15px rgba(234, 179, 8, 0.4);
 }
 
 /* Image zoom on hover */

@@ -13,7 +13,6 @@ $seo_title = "ANILOGUE | Watch Premium Anime Online";
 $seo_description = "Stream the latest anime releases straight from Japan. High-speed streaming, dark-mode premium player, same-day releases, and popular hits.";
 $seo_keywords = "anime, streaming, watch anime, subbed, dubbed, myanimelist, live anime, anilogue, premium anime";
 $seo_image = "https://anilogue.free.nf/images/favicon.png";
-$seo_url = "https://anilogue.free.nf/details?id=" . $id . "&type=" . $type;
 
 if ($id > 0) {
     // Fetch data from MyAnimeList API to populate real SEO metadata server-side

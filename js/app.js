@@ -9,10 +9,6 @@ const LoginModal = window.LoginModal;
 const Footer = window.Footer;
 const AnimeCard = window.AnimeCard;
 
-// Global SVGs for Search/Catalog Section
-const CloseIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-);
 
 window.App = function App() {
     // Navigation & Primary state
@@ -835,10 +831,7 @@ window.App = function App() {
                         setUsername(user);
                         setUserPicture("");
                         setShowLoginModal(false);
-                        // Load this user's saved watchlist from database
-                        if (loginAuthType === 'local') {
-                            await loadWatchlistFromDB();
-                        }
+
                     }}
                 />
             )}
@@ -849,7 +842,7 @@ window.App = function App() {
                     authType={authType}
                     onClose={() => setSelectedWatchlistItem(null)}
                     onSaveSuccess={handleWatchlistSaveSuccess}
-                    myList={myList}
+                    myList={selectedWatchlistItem.type === "manga" ? myMangaList : myList}
                 />
             )}
         </div>

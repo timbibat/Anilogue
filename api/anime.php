@@ -144,11 +144,16 @@ switch ($action) {
         $postFields = [
             'status' => $status
         ];
-        if (isset($_POST['score'])) {
-            $postFields['score'] = intval($_POST['score']);
-        }
-        if (isset($_POST['num_watched_episodes'])) {
-            $postFields['num_watched_episodes'] = intval($_POST['num_watched_episodes']);
+        
+        $allowedFields = [
+            'score', 'num_watched_episodes', 'num_times_rewatched', 'rewatching',
+            'is_asked_to_discuss', 'priority', 'comments', 'tags',
+            'storage_type', 'storage_value', 'start_date', 'finish_date'
+        ];
+        foreach ($allowedFields as $field) {
+            if (isset($_POST[$field])) {
+                $postFields[$field] = $_POST[$field];
+            }
         }
         
         $ch = curl_init();
@@ -170,35 +175,6 @@ switch ($action) {
         curl_close($ch);
         
         if ($httpCode === 200) {
-            // Automatically mirror status update to local database if local user session exists
-            if (isset($_SESSION['local_user_id'])) {
-                try {
-                    require_once '../includes/db.php';
-                    $db = getDB();
-                    if ($db) {
-                        $score = isset($_POST['score']) ? intval($_POST['score']) : 0;
-                        $progress = isset($_POST['num_watched_episodes']) ? intval($_POST['num_watched_episodes']) : 0;
-                        
-                        $stmt = $db->prepare("
-                            INSERT INTO watchlist (user_id, media_id, media_type, status, progress, score)
-                            VALUES (:user_id, :media_id, 'anime', :status, :progress, :score)
-                            ON DUPLICATE KEY UPDATE 
-                                status = VALUES(status), 
-                                progress = VALUES(progress), 
-                                score = VALUES(score)
-                        ");
-                        $stmt->execute([
-                            ':user_id' => $_SESSION['local_user_id'],
-                            ':media_id' => $id,
-                            ':status' => $status,
-                            ':progress' => $progress,
-                            ':score' => $score
-                        ]);
-                    }
-                } catch (Exception $dbEx) {
-                    // Silently fail to ensure the primary proxy response remains unbroken
-                }
-            }
             echo $response;
         } else {
             echo json_encode([
@@ -240,19 +216,6 @@ switch ($action) {
         curl_close($ch);
         
         if ($httpCode === 200 || $httpCode === 204) {
-            // Automatically delete from local database if local user session exists
-            if (isset($_SESSION['local_user_id'])) {
-                try {
-                    require_once '../includes/db.php';
-                    $db = getDB();
-                    if ($db) {
-                        $stmt = $db->prepare("DELETE FROM watchlist WHERE user_id = ? AND media_id = ? AND media_type = 'anime'");
-                        $stmt->execute([$_SESSION['local_user_id'], $id]);
-                    }
-                } catch (Exception $dbEx) {
-                    // Silently fail
-                }
-            }
             echo json_encode(['status' => 'deleted', 'message' => 'Anime removed from your MyAnimeList successfully.']);
         } else {
             echo json_encode([
@@ -485,6 +448,3 @@ function translateMALAnimeSchema($anime) {
         'background' => $background
     ];
 }
-
-
-

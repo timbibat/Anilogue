@@ -3,7 +3,7 @@ const apiService = window.apiService;
 
 // SVG Icons
 const CloseIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 );
 
 window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn, authType, onClose, onSaveSuccess, myList }) {
@@ -17,7 +17,79 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
     const [volsProgress, setVolsProgress] = useState(0); // Manga only
     const [score, setScore] = useState(0);
 
+    // Date States
+    const [startYear, setStartYear] = useState("");
+    const [startMonth, setStartMonth] = useState("");
+    const [startDay, setStartDay] = useState("");
+    const [finishYear, setFinishYear] = useState("");
+    const [finishMonth, setFinishMonth] = useState("");
+    const [finishDay, setFinishDay] = useState("");
+
+    // Advanced inputs
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [rewatchedTimes, setRewatchedTimes] = useState(0);
+    const [priority, setPriority] = useState("0");
+    const [comments, setComments] = useState("");
+    const [tags, setTags] = useState("");
+
     const isBookmarked = myList.includes(item.id);
+
+    // Helpers to generate date arrays
+    const months = [
+        { label: "Month", value: "" },
+        { label: "Jan", value: "01" },
+        { label: "Feb", value: "02" },
+        { label: "Mar", value: "03" },
+        { label: "Apr", value: "04" },
+        { label: "May", value: "05" },
+        { label: "Jun", value: "06" },
+        { label: "Jul", value: "07" },
+        { label: "Aug", value: "08" },
+        { label: "Sep", value: "09" },
+        { label: "Oct", value: "10" },
+        { label: "Nov", value: "11" },
+        { label: "Dec", value: "12" }
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const years = ["Year", ...Array.from({ length: 70 }, (_, i) => String(currentYear - i))];
+    const days = ["Day", ...Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'))];
+
+    // Handle Date Helper Actions
+    const handleInsertToday = (type) => {
+        const today = new Date();
+        const y = String(today.getFullYear());
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+
+        if (type === 'start') {
+            setStartYear(y);
+            setStartMonth(m);
+            setStartDay(d);
+        } else {
+            setFinishYear(y);
+            setFinishMonth(m);
+            setFinishDay(d);
+        }
+    };
+
+    const handleClearDate = (type) => {
+        if (type === 'start') {
+            setStartYear("");
+            setStartMonth("");
+            setStartDay("");
+        } else {
+            setFinishYear("");
+            setFinishMonth("");
+            setFinishDay("");
+        }
+    };
+
+    // Construct Date strings (YYYY-MM-DD or partial or empty)
+    const getFormattedDate = (y, m, d) => {
+        if (!y && !m && !d) return "";
+        return `${y || "0000"}-${m || "00"}-${d || "00"}`;
+    };
 
     // Fetch details
     useEffect(() => {
@@ -41,7 +113,13 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                                 score: guestItem.score,
                                 num_episodes_watched: guestItem.progress,
                                 num_chapters_read: guestItem.progress,
-                                num_volumes_read: guestItem.volumes_progress
+                                num_volumes_read: guestItem.volumes_progress,
+                                start_date: guestItem.start_date,
+                                finish_date: guestItem.finish_date,
+                                comments: guestItem.comments,
+                                priority: guestItem.priority,
+                                num_times_rewatched: guestItem.num_times_rewatched,
+                                num_times_reread: guestItem.num_times_reread
                             };
                         }
                     }
@@ -55,10 +133,31 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                         if (item.type === "manga") {
                             if (ls.num_chapters_read !== undefined) setProgress(ls.num_chapters_read);
                             if (ls.num_volumes_read !== undefined) setVolsProgress(ls.num_volumes_read);
+                            if (ls.num_times_reread !== undefined) setRewatchedTimes(ls.num_times_reread);
                         } else {
                             if (ls.num_episodes_watched !== undefined) setProgress(ls.num_episodes_watched);
+                            if (ls.num_times_rewatched !== undefined) setRewatchedTimes(ls.num_times_rewatched);
                         }
                         if (ls.score !== undefined) setScore(ls.score);
+
+                        // Dates
+                        if (ls.start_date) {
+                            const parts = ls.start_date.split("-");
+                            if (parts[0] && parts[0] !== "0000") setStartYear(parts[0]);
+                            if (parts[1] && parts[1] !== "00") setStartMonth(parts[1]);
+                            if (parts[2] && parts[2] !== "00") setStartDay(parts[2]);
+                        }
+                        if (ls.finish_date) {
+                            const parts = ls.finish_date.split("-");
+                            if (parts[0] && parts[0] !== "0000") setFinishYear(parts[0]);
+                            if (parts[1] && parts[1] !== "00") setFinishMonth(parts[1]);
+                            if (parts[2] && parts[2] !== "00") setFinishDay(parts[2]);
+                        }
+
+                        // Advanced
+                        if (ls.priority !== undefined) setPriority(String(ls.priority));
+                        if (ls.comments) setComments(ls.comments);
+                        if (ls.tags) setTags(typeof ls.tags === 'string' ? ls.tags : (Array.isArray(ls.tags) ? ls.tags.join(', ') : ''));
                     }
                 }
             } catch (err) {
@@ -73,6 +172,9 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
 
     const handleSave = async () => {
         setIsSaving(true);
+        const startDateFormatted = getFormattedDate(startYear, startMonth, startDay);
+        const finishDateFormatted = getFormattedDate(finishYear, finishMonth, finishDay);
+
         try {
             if (!isLoggedIn) {
                 // Save to guest localStorage details
@@ -83,7 +185,13 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                     status: status,
                     progress: progress,
                     volumes_progress: volsProgress,
-                    score: score
+                    score: score,
+                    start_date: startDateFormatted,
+                    finish_date: finishDateFormatted,
+                    comments: comments,
+                    priority: parseInt(priority) || 0,
+                    num_times_rewatched: item.type !== "manga" ? rewatchedTimes : 0,
+                    num_times_reread: item.type === "manga" ? rewatchedTimes : 0
                 };
                 localStorage.setItem("guestWatchlistDetails", JSON.stringify(savedDetails));
 
@@ -101,12 +209,21 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                 onClose();
             } else {
                 // Sync to MAL
-                const extraFields = { score };
+                const extraFields = { 
+                    score,
+                    start_date: startDateFormatted,
+                    finish_date: finishDateFormatted,
+                    priority: parseInt(priority) || 0,
+                    comments: comments,
+                    tags: tags
+                };
                 if (item.type === "manga") {
                     extraFields.num_chapters_read = progress;
                     extraFields.num_volumes_read = volsProgress;
+                    extraFields.num_times_reread = rewatchedTimes;
                 } else {
                     extraFields.num_watched_episodes = progress;
+                    extraFields.num_times_rewatched = rewatchedTimes;
                 }
                 const res = await apiService.updateMALListStatus(item.id, status, item.type, extraFields);
                 if (res && !res.error) {
@@ -164,192 +281,394 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
 
     const currentItem = detailedItem || item;
 
+    // Detect if date matches today
+    const today = new Date();
+    const todayY = String(today.getFullYear());
+    const todayM = String(today.getMonth() + 1).padStart(2, '0');
+    const todayD = String(today.getDate()).padStart(2, '0');
+
+    const isStartToday = startYear === todayY && startMonth === todayM && startDay === todayD;
+    const isStartUnknown = !startYear && !startMonth && !startDay;
+
+    const isFinishToday = finishYear === todayY && finishMonth === todayM && finishDay === todayD;
+    const isFinishUnknown = !finishYear && !finishMonth && !finishDay;
+
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-darkBg/90 backdrop-blur-md">
-            <div className="relative w-full max-w-sm bg-darkCard/95 border-2 border-animePurple rounded-xl p-6 text-center shadow-2xl glass-effect animate-slide-up">
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+            <div className="relative w-full max-w-[640px] bg-[#1a1a1a] border border-[#2b2b2b] rounded-md text-gray-200 shadow-2xl font-sans text-xs">
                 
-                <button 
-                    onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer transition-colors"
-                >
-                    <CloseIcon />
-                </button>
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#2b2b2b]">
+                    <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-white text-[13px]">
+                            Edit {item.type === "manga" ? "Manga" : "Anime"}
+                        </span>
+                        <span className="text-[#ff4e4e] text-[11px] font-normal pl-1">
+                            * Your list is public by default.
+                        </span>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white cursor-pointer transition-colors"
+                    >
+                        <CloseIcon />
+                    </button>
+                </div>
 
                 {loading ? (
-                    <div className="py-12 flex flex-col items-center justify-center space-y-4">
-                        <div className="w-10 h-10 border-4 border-animePurple border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-xs text-gray-400 font-orbitron tracking-widest animate-pulse">SYNCHRONIZING OPTIONS...</p>
+                    <div className="py-24 flex flex-col items-center justify-center space-y-3">
+                        <div className="w-8 h-8 border-3 border-animePurple border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-[11px] text-gray-400 font-medium tracking-wide">Loading status details...</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {/* Header Details */}
-                        <div className="text-left flex items-start space-x-3.5 border-b border-animePurple/20 pb-4">
-                            <div className="w-14 h-20 rounded-md overflow-hidden flex-none border border-animePurple/30">
-                                <img src={currentItem.cover} alt={currentItem.title} className="w-full h-full object-cover" />
+                    <div className="p-5 space-y-4">
+                        {/* Title block */}
+                        <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                            <div className="text-gray-400 font-bold text-right pr-3">
+                                {item.type === "manga" ? "Manga" : "Anime"} Title
                             </div>
-                            <div className="space-y-1">
-                                <span className="bg-animePurple/20 text-animePurple-light text-[9px] font-bold px-2 py-0.5 rounded font-orbitron uppercase tracking-wider border border-animePurple/35">
-                                    {currentItem.type || "Anime"}
-                                </span>
-                                <h3 className="text-xs sm:text-sm font-bold text-white line-clamp-2 leading-tight">
-                                    {currentItem.title}
-                                </h3>
-                                <p className="text-[10px] text-gray-400">
-                                    {currentItem.type === "manga" ? `${currentItem.chapters || '??'} Chapters` : `${currentItem.episodes || '??'} Episodes`}
-                                </p>
+                            <div className="font-bold text-[#4f84c4] text-[13px]">
+                                {currentItem.title}
                             </div>
                         </div>
 
-                        {/* Watchlist Options Form */}
-                        <div className="space-y-4 text-left text-xs font-sans text-white select-none">
-                            {/* Status Select */}
-                            <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                <label className="text-gray-300 font-bold text-right pr-2">Status:</label>
-                                <div className="relative">
-                                    <select 
-                                        value={status} 
-                                        onChange={(e) => setStatus(e.target.value)}
-                                        className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none appearance-none pr-8 focus:border-animePurple"
-                                    >
-                                        {item.type === "manga" ? (
-                                            <>
-                                                <option value="reading">Reading</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="on_hold">On-Hold</option>
-                                                <option value="dropped">Dropped</option>
-                                                <option value="plan_to_read">Plan to Read</option>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <option value="watching">Watching</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="on_hold">On-Hold</option>
-                                                <option value="dropped">Dropped</option>
-                                                <option value="plan_to_watch">Plan to Watch</option>
-                                            </>
-                                        )}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                                    </div>
-                                </div>
+                        {/* Status Select */}
+                        <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                            <label className="text-gray-400 font-bold text-right pr-3">Status</label>
+                            <div>
+                                <select 
+                                    value={status} 
+                                    onChange={(e) => setStatus(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-2 py-1.5 cursor-pointer outline-none focus:border-[#4f84c4] min-w-[150px]"
+                                >
+                                    {item.type === "manga" ? (
+                                        <>
+                                            <option value="reading">Reading</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="on_hold">On-Hold</option>
+                                            <option value="dropped">Dropped</option>
+                                            <option value="plan_to_read">Plan to Read</option>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <option value="watching">Watching</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="on_hold">On-Hold</option>
+                                            <option value="dropped">Dropped</option>
+                                            <option value="plan_to_watch">Plan to Watch</option>
+                                        </>
+                                    )}
+                                </select>
                             </div>
+                        </div>
 
-                            {/* Progress seen row */}
-                            {item.type === "manga" ? (
-                                <>
-                                    <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                        <label className="text-gray-300 font-bold text-right pr-2">Chaps Seen:</label>
-                                        <div className="flex items-center space-x-2">
-                                            <input 
-                                                type="number" 
-                                                min="0" 
-                                                max={currentItem.chapters !== 'N/A' && currentItem.chapters ? currentItem.chapters : 9999}
-                                                value={progress} 
-                                                onChange={(e) => setProgress(parseInt(e.target.value) || 0)}
-                                                className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-animePurple"
-                                            />
-                                            <span className="text-gray-400 font-bold">/ {currentItem.chapters !== 'N/A' && currentItem.chapters ? currentItem.chapters : '??'}</span>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                        <label className="text-gray-300 font-bold text-right pr-2">Vols Seen:</label>
-                                        <div className="flex items-center space-x-2">
-                                            <input 
-                                                type="number" 
-                                                min="0" 
-                                                max={currentItem.volumes !== 'N/A' && currentItem.volumes ? currentItem.volumes : 999}
-                                                value={volsProgress} 
-                                                onChange={(e) => setVolsProgress(parseInt(e.target.value) || 0)}
-                                                className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-animePurple"
-                                            />
-                                            <span className="text-gray-400 font-bold">/ {currentItem.volumes !== 'N/A' && currentItem.volumes ? currentItem.volumes : '??'}</span>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                    <label className="text-gray-300 font-bold text-right pr-2">Eps Seen:</label>
+                        {/* Progress row */}
+                        {item.type === "manga" ? (
+                            <>
+                                <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                                    <label className="text-gray-400 font-bold text-right pr-3">Chapters Read</label>
                                     <div className="flex items-center space-x-2">
                                         <input 
                                             type="number" 
                                             min="0" 
-                                            max={currentItem.episodes !== 'N/A' && currentItem.episodes ? currentItem.episodes : 999}
+                                            max={currentItem.chapters !== 'N/A' && currentItem.chapters ? currentItem.chapters : 9999}
                                             value={progress} 
                                             onChange={(e) => setProgress(parseInt(e.target.value) || 0)}
-                                            className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-animePurple"
+                                            className="w-16 bg-[#242424] border border-[#3c3c3c] text-white text-xs rounded py-1 px-2 text-center focus:outline-none focus:border-[#4f84c4]"
                                         />
-                                        <span className="text-gray-400 font-bold">/ {currentItem.episodes !== 'N/A' && currentItem.episodes ? currentItem.episodes : '??'}</span>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setProgress(prev => prev + 1)}
+                                            className="w-6 h-6 flex items-center justify-center bg-[#333] hover:bg-[#444] rounded text-white font-bold cursor-pointer"
+                                        >
+                                            +
+                                        </button>
+                                        <span className="text-gray-400 font-bold pl-1">/ {currentItem.chapters !== 'N/A' && currentItem.chapters ? currentItem.chapters : '??'}</span>
                                     </div>
                                 </div>
-                            )}
-
-                            {/* Score select row */}
-                            {authType === 'mal' ? (
-                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                    <label className="text-gray-300 font-bold text-right pr-2">Your Score:</label>
-                                    <div className="relative">
-                                        <select 
-                                            value={score} 
-                                            onChange={(e) => setScore(parseInt(e.target.value) || 0)}
-                                            className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none appearance-none pr-8 focus:border-animePurple"
+                                <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                                    <label className="text-gray-400 font-bold text-right pr-3">Volumes Read</label>
+                                    <div className="flex items-center space-x-2">
+                                        <input 
+                                            type="number" 
+                                            min="0" 
+                                            max={currentItem.volumes !== 'N/A' && currentItem.volumes ? currentItem.volumes : 999}
+                                            value={volsProgress} 
+                                            onChange={(e) => setVolsProgress(parseInt(e.target.value) || 0)}
+                                            className="w-16 bg-[#242424] border border-[#3c3c3c] text-white text-xs rounded py-1 px-2 text-center focus:outline-none focus:border-[#4f84c4]"
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setVolsProgress(prev => prev + 1)}
+                                            className="w-6 h-6 flex items-center justify-center bg-[#333] hover:bg-[#444] rounded text-white font-bold cursor-pointer"
                                         >
-                                            <option value="0">Select</option>
-                                            <option value="10">10 (Masterpiece)</option>
-                                            <option value="9">9 (Great)</option>
-                                            <option value="8">8 (Very Good)</option>
-                                            <option value="7">7 (Good)</option>
-                                            <option value="6">6 (Fine)</option>
-                                            <option value="5">5 (Average)</option>
-                                            <option value="4">4 (Bad)</option>
-                                            <option value="3">3 (Very Bad)</option>
-                                            <option value="2">2 (Horrible)</option>
-                                            <option value="1">1 (Appalling)</option>
-                                        </select>
-                                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                            +
+                                        </button>
+                                        <span className="text-gray-400 font-bold pl-1">/ {currentItem.volumes !== 'N/A' && currentItem.volumes ? currentItem.volumes : '??'}</span>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                                <label className="text-gray-400 font-bold text-right pr-3">Episodes Watched</label>
+                                <div className="flex items-center space-x-2">
+                                    <input 
+                                        type="number" 
+                                        min="0" 
+                                        max={currentItem.episodes !== 'N/A' && currentItem.episodes ? currentItem.episodes : 999}
+                                        value={progress} 
+                                        onChange={(e) => setProgress(parseInt(e.target.value) || 0)}
+                                        className="w-16 bg-[#242424] border border-[#3c3c3c] text-white text-xs rounded py-1 px-2 text-center focus:outline-none focus:border-[#4f84c4]"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setProgress(prev => prev + 1)}
+                                        className="w-6 h-6 flex items-center justify-center bg-[#333] hover:bg-[#444] rounded text-white font-bold cursor-pointer"
+                                    >
+                                        +
+                                    </button>
+                                    <span className="text-gray-400 font-bold pl-1">/ {currentItem.episodes !== 'N/A' && currentItem.episodes ? currentItem.episodes : '12'}</span>
+                                    <span className="text-[#4f84c4] hover:underline cursor-pointer pl-2">History</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Score Select */}
+                        <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                            <label className="text-gray-400 font-bold text-right pr-3">Your Score</label>
+                            <div>
+                                <select 
+                                    value={score} 
+                                    onChange={(e) => setScore(parseInt(e.target.value) || 0)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-2 py-1.5 cursor-pointer outline-none focus:border-[#4f84c4] min-w-[150px]"
+                                >
+                                    <option value="0">Select score</option>
+                                    <option value="10">10 (Masterpiece)</option>
+                                    <option value="9">9 (Great)</option>
+                                    <option value="8">8 (Very Good)</option>
+                                    <option value="7">7 (Good)</option>
+                                    <option value="6">6 (Fine)</option>
+                                    <option value="5">5 (Average)</option>
+                                    <option value="4">4 (Bad)</option>
+                                    <option value="3">3 (Very Bad)</option>
+                                    <option value="2">2 (Horrible)</option>
+                                    <option value="1">1 (Appalling)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Start Date */}
+                        <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                            <label className="text-gray-400 font-bold text-right pr-3">Start Date</label>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-gray-400">Month:</span>
+                                <select 
+                                    value={startMonth} 
+                                    onChange={(e) => setStartMonth(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-1.5 py-1 cursor-pointer outline-none"
+                                >
+                                    {months.map(m => (
+                                        <option key={m.value} value={m.value}>{m.label}</option>
+                                    ))}
+                                </select>
+                                <span className="text-gray-400">Day:</span>
+                                <select 
+                                    value={startDay} 
+                                    onChange={(e) => setStartDay(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-1.5 py-1 cursor-pointer outline-none"
+                                >
+                                    <option value="">Day</option>
+                                    {days.slice(1).map(d => (
+                                        <option key={d} value={d}>{parseInt(d)}</option>
+                                    ))}
+                                </select>
+                                <span className="text-gray-400">Year:</span>
+                                <select 
+                                    value={startYear} 
+                                    onChange={(e) => setStartYear(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-1.5 py-1 cursor-pointer outline-none"
+                                >
+                                    <option value="">Year</option>
+                                    {years.slice(1).map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+
+                                <label className="flex items-center space-x-1 pl-2 text-gray-300 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isStartToday}
+                                        onChange={(e) => e.target.checked ? handleInsertToday('start') : handleClearDate('start')}
+                                        className="rounded border-[#3c3c3c] bg-[#242424] text-animePurple focus:ring-0" 
+                                    />
+                                    <span className="text-[11px]">Insert Today</span>
+                                </label>
+
+                                <label className="flex items-center space-x-1 pl-1 text-gray-300 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isStartUnknown}
+                                        onChange={(e) => e.target.checked ? handleClearDate('start') : handleInsertToday('start')}
+                                        className="rounded border-[#3c3c3c] bg-[#242424] text-animePurple focus:ring-0" 
+                                    />
+                                    <span className="text-[11px]">Unknown Date</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Finish Date */}
+                        <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                            <label className="text-gray-400 font-bold text-right pr-3">Finish Date</label>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-gray-400">Month:</span>
+                                <select 
+                                    value={finishMonth} 
+                                    onChange={(e) => setFinishMonth(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-1.5 py-1 cursor-pointer outline-none"
+                                >
+                                    {months.map(m => (
+                                        <option key={m.value} value={m.value}>{m.label}</option>
+                                    ))}
+                                </select>
+                                <span className="text-gray-400">Day:</span>
+                                <select 
+                                    value={finishDay} 
+                                    onChange={(e) => setFinishDay(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-1.5 py-1 cursor-pointer outline-none"
+                                >
+                                    <option value="">Day</option>
+                                    {days.slice(1).map(d => (
+                                        <option key={d} value={d}>{parseInt(d)}</option>
+                                    ))}
+                                </select>
+                                <span className="text-gray-400">Year:</span>
+                                <select 
+                                    value={finishYear} 
+                                    onChange={(e) => setFinishYear(e.target.value)}
+                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-1.5 py-1 cursor-pointer outline-none"
+                                >
+                                    <option value="">Year</option>
+                                    {years.slice(1).map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+
+                                <label className="flex items-center space-x-1 pl-2 text-gray-300 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isFinishToday}
+                                        onChange={(e) => e.target.checked ? handleInsertToday('finish') : handleClearDate('finish')}
+                                        className="rounded border-[#3c3c3c] bg-[#242424] text-animePurple focus:ring-0" 
+                                    />
+                                    <span className="text-[11px]">Insert Today</span>
+                                </label>
+
+                                <label className="flex items-center space-x-1 pl-1 text-gray-300 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isFinishUnknown}
+                                        onChange={(e) => e.target.checked ? handleClearDate('finish') : handleInsertToday('finish')}
+                                        className="rounded border-[#3c3c3c] bg-[#242424] text-animePurple focus:ring-0" 
+                                    />
+                                    <span className="text-[11px]">Unknown Date</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Collapsible Show Advanced */}
+                        <div className="border-t border-[#2b2b2b] pt-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                className="w-full flex items-center justify-center space-x-1 py-1.5 text-gray-400 hover:text-white cursor-pointer font-bold transition-all text-center"
+                            >
+                                <span>{showAdvanced ? "Hide Advanced" : "Show Advanced"}</span>
+                                <svg className={`w-3.5 h-3.5 transform transition-transform ${showAdvanced ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path></svg>
+                            </button>
+
+                            {showAdvanced && (
+                                <div className="mt-3 space-y-4 border-t border-[#2b2b2b]/40 pt-4">
+                                    {/* Rewatched/Reread Times */}
+                                    <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                                        <label className="text-gray-400 font-bold text-right pr-3">
+                                            {item.type === "manga" ? "Times Reread" : "Times Rewatched"}
+                                        </label>
+                                        <div>
+                                            <input 
+                                                type="number" 
+                                                min="0"
+                                                value={rewatchedTimes} 
+                                                onChange={(e) => setRewatchedTimes(parseInt(e.target.value) || 0)}
+                                                className="w-20 bg-[#242424] border border-[#3c3c3c] text-white text-xs rounded py-1 px-2 text-center focus:outline-none focus:border-[#4f84c4]"
+                                            />
                                         </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                    <label className="text-gray-300 font-bold text-right pr-2">Scoring:</label>
-                                    <button 
-                                        type="button"
-                                        onClick={() => window.location.href = 'api/auth.php?action=login'}
-                                        className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-orbitron font-bold text-[10px] tracking-wider rounded flex items-center justify-center space-x-1.5 transition-all active:scale-95 border border-blue-500/25 shadow-md shadow-blue-600/10 cursor-pointer text-center"
-                                    >
-                                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1.85 14.82l-3.32-3.32a.74.74 0 111.05-1.05l2.27 2.27 5.09-5.09a.74.74 0 111.05 1.05l-5.61 5.61a.73.73 0 01-1.05 0z"/></svg>
-                                        <span>CONTINUE WITH MAL ACCOUNT</span>
-                                    </button>
+
+                                    {/* Priority */}
+                                    <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                                        <label className="text-gray-400 font-bold text-right pr-3">Priority</label>
+                                        <div>
+                                            <select 
+                                                value={priority} 
+                                                onChange={(e) => setPriority(e.target.value)}
+                                                className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-2 py-1.5 cursor-pointer outline-none focus:border-[#4f84c4] min-w-[150px]"
+                                            >
+                                                <option value="0">Low</option>
+                                                <option value="1">Medium</option>
+                                                <option value="2">High</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Comments */}
+                                    <div className="grid grid-cols-[130px_1fr] gap-3 items-start">
+                                        <label className="text-gray-400 font-bold text-right pr-3 pt-1">Comments</label>
+                                        <div>
+                                            <textarea 
+                                                value={comments} 
+                                                rows="3"
+                                                placeholder="Write your thoughts..."
+                                                onChange={(e) => setComments(e.target.value)}
+                                                className="w-full bg-[#242424] border border-[#3c3c3c] text-white text-xs rounded py-1.5 px-3 focus:outline-none focus:border-[#4f84c4] placeholder-gray-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Tags */}
+                                    <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
+                                        <label className="text-gray-400 font-bold text-right pr-3">Tags</label>
+                                        <div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="e.g. action, romance (comma separated)"
+                                                value={tags} 
+                                                onChange={(e) => setTags(e.target.value)}
+                                                className="w-full bg-[#242424] border border-[#3c3c3c] text-white text-xs rounded py-1.5 px-3 focus:outline-none focus:border-[#4f84c4] placeholder-gray-500"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Action buttons */}
-                        <div className="pt-4 flex items-center justify-end space-x-3 border-t border-animePurple/15 select-none">
+                        {/* Submit / Delete Buttons */}
+                        <div className="pt-4 flex items-center justify-center space-x-3 border-t border-[#2b2b2b] select-none">
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="px-6 py-1.5 bg-[#2b5998] hover:bg-[#346db7] text-white font-medium text-xs rounded border border-[#1b3a63] cursor-pointer disabled:opacity-50 min-w-[80px]"
+                            >
+                                {isSaving ? "Saving..." : "Submit"}
+                            </button>
                             {isBookmarked && (
                                 <button
                                     onClick={handleDelete}
                                     disabled={isSaving}
-                                    className="text-red-400 hover:text-red-300 font-bold text-xs tracking-wider uppercase disabled:opacity-50 cursor-pointer"
+                                    className="px-6 py-1.5 bg-[#ab2b2b] hover:bg-[#cc3333] text-white font-medium text-xs rounded border border-[#6b1b1b] cursor-pointer disabled:opacity-50 min-w-[80px]"
                                 >
-                                    Remove
+                                    Delete
                                 </button>
                             )}
-                            <button
-                                onClick={onClose}
-                                className="px-4 py-2 border border-white/10 rounded text-xs text-gray-300 hover:text-white hover:border-white/20 transition-all font-orbitron font-bold tracking-wider cursor-pointer"
-                            >
-                                CANCEL
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={isSaving}
-                                className="px-5 py-2.5 bg-gradient-to-r from-animePurple to-purple-800 text-white hover:from-purple-500 hover:to-purple-700 font-orbitron font-black text-xs tracking-widest rounded shadow-md shadow-animePurple/20 transition-all cursor-pointer disabled:opacity-50"
-                            >
-                                {isSaving ? "SAVING..." : (isBookmarked ? "UPDATE" : "SAVE")}
-                            </button>
                         </div>
                     </div>
                 )}

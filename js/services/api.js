@@ -44,20 +44,6 @@ async function getAnimeRanking(type = 'all') {
 }
 
 /**
- * Fetch dynamic suggestions based on MAL suggestions algorithm
- */
-async function getAnimeSuggestions() {
-    return await fetchFromProxy(`${PROXY_URL}?action=suggestions`);
-}
-
-/**
- * Fetch anime by season and year (e.g. 2026 fall)
- */
-async function getAnimeSeason(year, season) {
-    return await fetchFromProxy(`${PROXY_URL}?action=season&year=${year}&season=${season}`);
-}
-
-/**
  * Search anime from MAL based on text query
  */
 async function searchAnime(query) {
@@ -142,8 +128,6 @@ async function deleteMALListItem(id, type = 'anime') {
 // Expose to window scope for other Babel components
 window.apiService = {
     getAnimeRanking,
-    getAnimeSuggestions,
-    getAnimeSeason,
     searchAnime,
     getAnimeDetails,
     getAnimeByGenre,
@@ -151,7 +135,7 @@ window.apiService = {
     updateMALListStatus,
     deleteMALListItem,
     getMALWatchlist: async function(type = 'anime') {
-        const proxy = type === 'manga' ? window.MANGA_PROXY_URL || 'api/manga.php' : window.PROXY_URL || 'api/anime.php';
+        const proxy = type === 'manga' ? MANGA_PROXY_URL : PROXY_URL;
         return await fetchFromProxy(`${proxy}?action=my_watchlist`);
     },
     
@@ -218,42 +202,5 @@ window.apiService = {
             console.error('Logout request failed:', e);
             return { success: false };
         }
-    },
-
-    /** Fetch user's saved watchlist from database */
-    getDBWatchlist: async function() {
-        const response = await fetch('api/watchlist.php', {
-            credentials: 'same-origin'
-        });
-        return await response.json();
-    },
-
-    /** Save an item to the user's database watchlist */
-    saveToDBWatchlist: async function(mediaId, mediaType, status, progress, volumesProgress, score) {
-        const response = await fetch('api/watchlist.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                media_id: mediaId,
-                media_type: mediaType,
-                status: status,
-                progress: progress || 0,
-                volumes_progress: volumesProgress || 0,
-                score: score || 0
-            })
-        });
-        return await response.json();
-    },
-
-    /** Delete an item from the user's database watchlist */
-    deleteFromDBWatchlist: async function(mediaId, mediaType) {
-        const response = await fetch('api/watchlist.php', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ media_id: mediaId, media_type: mediaType })
-        });
-        return await response.json();
     }
 };
