@@ -281,7 +281,7 @@ window.App = function App() {
             }
         }
 
-        const checkForMergeableItems = async () => {
+        const checkForMergeableItems = async (currentIsLoggedIn, currentAuthType, hasLocalDB = false) => {
             const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
             const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
             if (guestAnime.length > 0 || guestManga.length > 0) {
@@ -289,8 +289,8 @@ window.App = function App() {
                 return;
             }
             
-            // Only query DB watchlist if logged in locally (avoids 412 errors for MAL-only sessions)
-            if (isLoggedIn && authType === 'local') {
+            // Allow querying DB watchlist if logged in locally or in a combined MAL+Local session
+            if (hasLocalDB || (currentIsLoggedIn && currentAuthType === 'local')) {
                 try {
                     const dbData = await apiService.getDBWatchlist();
                     if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
@@ -308,21 +308,10 @@ window.App = function App() {
         // Check local database session first, then fall back to MAL OAuth
         async function checkUserAuth() {
             try {
-                // Check local DB session
+                // Fetch both local and MAL session statuses concurrently
                 const localSession = await apiService.getLocalUserSession();
-                if (isMounted && localSession && localSession.isLoggedIn) {
-                    if (localSession.authType === 'local') {
-                        setIsLoggedIn(true);
-                        setAuthType('local');
-                        setUsername(localSession.user.username);
-                        setUserPicture("");
-                        // Load this user's watchlist from the database
-                        await loadWatchlistFromDB();
-                        return; // Local user found, no need to check MAL
-                    }
-                }
-                // Fall back to MAL OAuth session
                 const malUser = await apiService.getCurrentUser();
+                
                 if (isMounted && malUser && malUser.isLoggedIn) {
                     setIsLoggedIn(true);
                     setAuthType('mal');
@@ -332,8 +321,24 @@ window.App = function App() {
                     // Load live watchlist IDs from MyAnimeList
                     await loadWatchlistFromMAL();
                     
-                    // Scan for mergeable local list items to present the merge option
-                    await checkForMergeableItems();
+                    // Scan for mergeable items (If also logged in locally, check DB watchlist too!)
+                    const hasLocalDB = localSession && localSession.isLoggedIn && localSession.authType === 'local';
+                    await checkForMergeableItems(true, 'mal', hasLocalDB);
+                    return;
+                }
+                
+                if (isMounted && localSession && localSession.isLoggedIn) {
+                    if (localSession.authType === 'local') {
+                        setIsLoggedIn(true);
+                        setAuthType('local');
+                        setUsername(localSession.user.username);
+                        setUserPicture("");
+                        // Load this user's watchlist from the database
+                        await loadWatchlistFromDB();
+                        
+                        await checkForMergeableItems(true, 'local', true);
+                        return;
+                    }
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
