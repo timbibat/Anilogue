@@ -437,23 +437,33 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                         <div className="grid grid-cols-[130px_1fr] gap-3 items-center">
                             <label className="text-gray-400 font-bold text-right pr-3">Your Score</label>
                             <div>
-                                <select 
-                                    value={score} 
-                                    onChange={(e) => setScore(parseInt(e.target.value) || 0)}
-                                    className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-2 py-1.5 cursor-pointer outline-none focus:border-[#4f84c4] min-w-[150px]"
-                                >
-                                    <option value="0">Select score</option>
-                                    <option value="10">10 (Masterpiece)</option>
-                                    <option value="9">9 (Great)</option>
-                                    <option value="8">8 (Very Good)</option>
-                                    <option value="7">7 (Good)</option>
-                                    <option value="6">6 (Fine)</option>
-                                    <option value="5">5 (Average)</option>
-                                    <option value="4">4 (Bad)</option>
-                                    <option value="3">3 (Very Bad)</option>
-                                    <option value="2">2 (Horrible)</option>
-                                    <option value="1">1 (Appalling)</option>
-                                </select>
+                                {authType === 'mal' ? (
+                                    <select 
+                                        value={score} 
+                                        onChange={(e) => setScore(parseInt(e.target.value) || 0)}
+                                        className="bg-[#242424] border border-[#3c3c3c] text-gray-200 text-xs rounded px-2 py-1.5 cursor-pointer outline-none focus:border-[#4f84c4] min-w-[150px]"
+                                    >
+                                        <option value="0">Select score</option>
+                                        <option value="10">10 (Masterpiece)</option>
+                                        <option value="9">9 (Great)</option>
+                                        <option value="8">8 (Very Good)</option>
+                                        <option value="7">7 (Good)</option>
+                                        <option value="6">6 (Fine)</option>
+                                        <option value="5">5 (Average)</option>
+                                        <option value="4">4 (Bad)</option>
+                                        <option value="3">3 (Very Bad)</option>
+                                        <option value="2">2 (Horrible)</option>
+                                        <option value="1">1 (Appalling)</option>
+                                    </select>
+                                ) : (
+                                    <button 
+                                        type="button"
+                                        onClick={() => window.location.href = 'api/auth.php?action=login'}
+                                        className="py-1.5 px-3 bg-[#242424] hover:bg-[#2c2c2c] border border-[#3c3c3c] hover:border-blue-500/50 text-[#4f84c4] text-xs font-bold rounded flex items-center justify-center space-x-1.5 transition-all cursor-pointer text-center outline-none"
+                                    >
+                                        <span>Continue with MAL</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
