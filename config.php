@@ -79,11 +79,13 @@ function env($key, $default = null) {
 // Load environment configuration
 loadEnv(__DIR__);
 
-// Retrieve Client ID from Environment variables
+// Retrieve Client ID and Secret from Environment variables
 $malClientId = env('MAL_CLIENT_ID');
+$malClientSecret = env('MAL_CLIENT_SECRET');
 
 // Define configuration constants
 define('MAL_CLIENT_ID', $malClientId ? trim($malClientId) : 'YOUR_MYANIMELIST_CLIENT_ID');
+define('MAL_CLIENT_SECRET', $malClientSecret ? trim($malClientSecret) : '');
 define('MAL_API_URL', 'https://api.myanimelist.net/v2');
 
 // Suppress errors in production to prevent PHP warnings from breaking JSON responses
