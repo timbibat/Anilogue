@@ -24,6 +24,7 @@ include 'includes/header.php';
 <script type="text/babel" src="js/components/AnimeCard.js"></script>
 <script type="text/babel" src="js/components/Navbar.js"></script>
 <script type="text/babel" src="js/components/LoginModal.js"></script>
+<script type="text/babel" src="js/components/WatchlistOptionsModal.js"></script>
 <script type="text/babel" src="js/components/Footer.js"></script>
 
 <!-- Load Composite Components depending on Leaf Components -->

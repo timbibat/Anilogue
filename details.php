@@ -63,6 +63,28 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
             }
         };
 
+        // Load guest watchlist from localStorage if not logged in
+        useEffect(() => {
+            if (!isLoggedIn) {
+                const savedAnime = localStorage.getItem("guestWatchlist");
+                const savedManga = localStorage.getItem("guestMangaWatchlist");
+                if (savedAnime) {
+                    try { setMyList(JSON.parse(savedAnime)); } catch(e) {}
+                }
+                if (savedManga) {
+                    try { setMyMangaList(JSON.parse(savedManga)); } catch(e) {}
+                }
+            }
+        }, [isLoggedIn]);
+
+        // Save guest watchlist to localStorage when altered if not logged in
+        useEffect(() => {
+            if (!isLoggedIn) {
+                localStorage.setItem("guestWatchlist", JSON.stringify(myList));
+                localStorage.setItem("guestMangaWatchlist", JSON.stringify(myMangaList));
+            }
+        }, [myList, myMangaList, isLoggedIn]);
+
         // Check local DB session first, then MAL OAuth
         useEffect(() => {
             let isMounted = true;

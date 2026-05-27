@@ -129,7 +129,7 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                     {isLoggedIn ? (
                         <div className="flex items-center space-x-3 group relative cursor-pointer">
                             <div className="w-9 h-9 rounded-full ring-2 ring-animePurple overflow-hidden">
-                                <img src={userPicture || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=100&auto=format&fit=crop&q=80"} alt="Avatar" className="w-full h-full object-cover" />
+                                <img src={userPicture || "images/default-avatar.png"} alt="Avatar" className="w-full h-full object-cover" />
                             </div>
                             <div className="hidden md:flex flex-col text-left">
                                 <span className="text-xs font-semibold text-white max-w-[80px] truncate">{username}</span>

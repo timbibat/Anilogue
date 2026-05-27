@@ -25,6 +25,7 @@ window.App = function App() {
         window.location.href = `details.php?type=${type}&id=${anime.id}&from=${activeTab}`;
     };
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [selectedWatchlistItem, setSelectedWatchlistItem] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [authType, setAuthType] = useState(null); // 'local' | 'mal' | null
     const [username, setUsername] = useState("");
@@ -63,6 +64,27 @@ window.App = function App() {
             console.error("Failed to load watchlist from DB:", e);
         }
     };
+
+    // Load guest watchlist from localStorage on mount/auth-check if not logged in
+    useEffect(() => {
+        if (!isLoggedIn) {
+            const savedList = localStorage.getItem("guestWatchlist");
+            if (savedList) {
+                try {
+                    setMyList(JSON.parse(savedList));
+                } catch (e) {
+                    console.error("Failed to parse guest watchlist:", e);
+                }
+            }
+        }
+    }, [isLoggedIn]);
+
+    // Save guest watchlist to localStorage when myList changes if not logged in
+    useEffect(() => {
+        if (!isLoggedIn) {
+            localStorage.setItem("guestWatchlist", JSON.stringify(myList));
+        }
+    }, [myList, isLoggedIn]);
 
     // Fetch watchlist details dynamically when myList changes or tab changes to mylist
     useEffect(() => {
@@ -238,45 +260,30 @@ window.App = function App() {
         return () => clearTimeout(delayDebounce);
     }, [searchQuery, activeTab]);
 
-    // Add or remove bookmark
-    const toggleBookmark = async (id, itemType = 'anime') => {
-        if (myList.includes(id)) {
-            setMyList(myList.filter(item => item !== id));
-            if (isLoggedIn) {
-                // Sync removal to appropriate backend
-                if (authType === 'local') {
-                    try {
-                        await apiService.deleteFromDBWatchlist(id, itemType);
-                    } catch (e) {
-                        console.error("DB watchlist delete failed:", e);
-                    }
-                }
-                if (authType === 'mal') {
-                    try {
-                        await apiService.deleteMALListItem(id, itemType);
-                    } catch (e) {
-                        console.error("Live MAL unsync failed:", e);
-                    }
-                }
+    // Intercept bookmark toggling on the home page to show the options modal
+    const toggleBookmark = (id, itemType = 'anime') => {
+        setSelectedWatchlistItem({ id, type: itemType });
+    };
+
+    // Callback when options are successfully saved/removed in WatchlistOptionsModal
+    const handleWatchlistSaveSuccess = async () => {
+        if (isLoggedIn) {
+            if (authType === 'local') {
+                await loadWatchlistFromDB();
+            } else {
+                window.location.reload();
             }
         } else {
-            setMyList([...myList, id]);
-            if (isLoggedIn) {
-                // Sync addition to appropriate backend
-                if (authType === 'local') {
-                    try {
-                        await apiService.saveToDBWatchlist(id, itemType, 'plan_to_watch');
-                    } catch (e) {
-                        console.error("DB watchlist save failed:", e);
-                    }
+            // For Guest users, update state directly from localStorage
+            const savedList = localStorage.getItem("guestWatchlist");
+            if (savedList) {
+                try {
+                    setMyList(JSON.parse(savedList));
+                } catch (e) {
+                    console.error("Failed to parse guest watchlist:", e);
                 }
-                if (authType === 'mal') {
-                    try {
-                        await apiService.updateMALListStatus(id, 'plan_to_watch', itemType);
-                    } catch (e) {
-                        console.error("Live MAL sync failed:", e);
-                    }
-                }
+            } else {
+                setMyList([]);
             }
         }
     };
@@ -632,6 +639,16 @@ window.App = function App() {
                             await loadWatchlistFromDB();
                         }
                     }}
+                />
+            )}
+            {selectedWatchlistItem && (
+                <WatchlistOptionsModal
+                    item={selectedWatchlistItem}
+                    isLoggedIn={isLoggedIn}
+                    authType={authType}
+                    onClose={() => setSelectedWatchlistItem(null)}
+                    onSaveSuccess={handleWatchlistSaveSuccess}
+                    myList={myList}
                 />
             )}
         </div>

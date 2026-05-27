@@ -42,11 +42,24 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                     ? await apiService.getMangaDetails(anime.id)
                     : await apiService.getAnimeDetails(anime.id);
                 if (isMounted) {
-                    if (data && !data.isUnconfigured) {
-                        setDetailedAnime(data);
-                    } else {
-                        setDetailedAnime(anime);
+                    let finalData = data && !data.isUnconfigured ? data : anime;
+                    
+                    // Inject local storage status for guest users
+                    if (!isLoggedIn) {
+                        const savedDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
+                        const guestItem = savedDetails[anime.id];
+                        if (guestItem) {
+                            finalData.my_list_status = {
+                                status: guestItem.status,
+                                score: guestItem.score,
+                                num_episodes_watched: guestItem.progress,
+                                num_chapters_read: guestItem.progress,
+                                num_volumes_read: guestItem.volumes_progress
+                            };
+                        }
                     }
+                    
+                    setDetailedAnime(finalData);
                 }
             } catch (err) {
                 console.error("Error loading details:", err);
@@ -62,7 +75,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
         
         fetchDetails();
         return () => { isMounted = false; };
-    }, [anime, type]);
+    }, [anime, type, isLoggedIn]);
 
     // Scroll to top on mount
     useEffect(() => {
@@ -95,7 +108,37 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
     const handleMALSync = async () => {
         setIsUpdatingMAL(true);
         try {
-            if (authType === 'local') {
+            if (!isLoggedIn) {
+                // Save to guest localStorage details
+                const savedDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
+                savedDetails[currentAnime.id] = {
+                    media_id: currentAnime.id,
+                    media_type: type,
+                    status: malStatus,
+                    progress: malProgress,
+                    volumes_progress: malVolsProgress,
+                    score: malScore
+                };
+                localStorage.setItem("guestWatchlistDetails", JSON.stringify(savedDetails));
+
+                // Sync status visually
+                const fakeStatus = {
+                    status: malStatus,
+                    score: malScore,
+                    num_episodes_watched: malProgress,
+                    num_chapters_read: malProgress,
+                    num_volumes_read: malVolsProgress
+                };
+                setDetailedAnime(prev => ({
+                    ...prev,
+                    my_list_status: fakeStatus
+                }));
+
+                if (!isBookmarked) {
+                    toggleBookmark(currentAnime.id, type);
+                }
+                alert("Successfully saved to your local guest watchlist!");
+            } else if (authType === 'local') {
                 // Save to local database
                 const res = await apiService.saveToDBWatchlist(
                     currentAnime.id, type, malStatus, malProgress, malVolsProgress, malScore
@@ -145,7 +188,25 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
         if (!confirm("Are you sure you want to remove this from your watchlist entirely?")) return;
         setIsUpdatingMAL(true);
         try {
-            if (authType === 'local') {
+            if (!isLoggedIn) {
+                const savedDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
+                delete savedDetails[currentAnime.id];
+                localStorage.setItem("guestWatchlistDetails", JSON.stringify(savedDetails));
+
+                setDetailedAnime(prev => ({
+                    ...prev,
+                    my_list_status: null
+                }));
+
+                if (isBookmarked) {
+                    toggleBookmark(currentAnime.id, type);
+                }
+                setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
+                setMalProgress(0);
+                setMalVolsProgress(0);
+                setMalScore(0);
+                alert("Removed from your local watchlist successfully!");
+            } else if (authType === 'local') {
                 const res = await apiService.deleteFromDBWatchlist(currentAnime.id, type);
                 if (res && res.success) {
                     if (isBookmarked) {
@@ -272,28 +333,30 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                         {/* Direct Interactions Panel */}
                         <div className="w-64 lg:w-full space-y-4">
                             {/* Premium MAL Live Synchronizer Panel */}
-                            {isLoggedIn ? (
-                                <div className="w-full bg-[#121212] border border-gray-800 rounded-lg p-5 shadow-2xl space-y-4 text-xs font-sans text-white select-none">
+                            {isLoggedIn || true ? (
+                                <div className="w-full bg-darkCard/95 border border-animePurple/30 rounded-xl p-5 shadow-neon-purple/5 shadow-2xl space-y-4 text-xs font-sans text-white select-none">
                                     {/* Underlined Header Title */}
-                                    <div className="text-left font-bold text-sm pb-1 mb-2 border-b border-[#2e51a2] text-white tracking-wide">
-                                        Add to List
+                                    <div className="text-left font-orbitron font-bold text-xs uppercase tracking-wider pb-2.5 mb-2.5 border-b border-animePurple/20 text-white">
+                                        {isLoggedIn ? "Watchlist Options" : "Guest List Options"}
                                     </div>
                                     
                                     {/* Red warning note */}
-                                    <div className="text-[11px] text-[#ff4d4d] font-semibold">
-                                        * Your list is public by default.
-                                    </div>
+                                    {isLoggedIn && authType === 'mal' && (
+                                        <div className="text-[10px] text-red-400 font-semibold leading-relaxed border border-red-500/25 bg-red-950/15 px-2.5 py-1.5 rounded">
+                                            * Your list is public by default.
+                                        </div>
+                                    )}
                                     
                                     {/* Form Fields Aligned horizontally */}
                                     <div className="space-y-3.5">
                                         {/* Status Row */}
                                         <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                            <label className="text-gray-300 font-bold text-right pr-2">Status:</label>
+                                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light text-right pr-2">Status:</label>
                                             <div className="relative">
                                                 <select 
                                                     value={malStatus} 
                                                     onChange={(e) => setMalStatus(e.target.value)}
-                                                    className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none transition-colors appearance-none pr-8 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                    className="w-full bg-darkBg/60 border border-animePurple/20 text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none transition-all appearance-none pr-8 focus:border-animePurple focus:ring-1 focus:ring-animePurple"
                                                 >
                                                     {type === "manga" ? (
                                                         <>
@@ -318,12 +381,12 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                                 </div>
                                             </div>
                                         </div>
-
+ 
                                         {/* Progress Row (Eps Seen or Chaps/Vols Seen) */}
                                         {type === "manga" ? (
                                             <>
                                                 <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                                    <label className="text-gray-300 font-bold text-right pr-2">Chaps Seen:</label>
+                                                    <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light text-right pr-2">Chaps Seen:</label>
                                                     <div className="flex items-center space-x-2">
                                                         <input 
                                                             type="number" 
@@ -331,13 +394,13 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                                             max={currentAnime.chapters !== 'N/A' ? currentAnime.chapters : 9999}
                                                             value={malProgress} 
                                                             onChange={(e) => setMalProgress(parseInt(e.target.value) || 0)}
-                                                            className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-blue-500"
+                                                            className="w-16 bg-darkBg/60 border border-animePurple/20 text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
                                                         />
                                                         <span className="text-gray-400 font-bold">/ {currentAnime.chapters !== 'N/A' && currentAnime.chapters ? currentAnime.chapters : '??'}</span>
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                                    <label className="text-gray-300 font-bold text-right pr-2">Vols Seen:</label>
+                                                    <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light text-right pr-2">Vols Seen:</label>
                                                     <div className="flex items-center space-x-2">
                                                         <input 
                                                             type="number" 
@@ -345,7 +408,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                                             max={currentAnime.volumes !== 'N/A' ? currentAnime.volumes : 999}
                                                             value={malVolsProgress} 
                                                             onChange={(e) => setMalVolsProgress(parseInt(e.target.value) || 0)}
-                                                            className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-blue-500"
+                                                            className="w-16 bg-darkBg/60 border border-animePurple/20 text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
                                                         />
                                                         <span className="text-gray-400 font-bold">/ {currentAnime.volumes !== 'N/A' && currentAnime.volumes ? currentAnime.volumes : '??'}</span>
                                                     </div>
@@ -353,7 +416,7 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                             </>
                                         ) : (
                                             <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                                <label className="text-gray-300 font-bold text-right pr-2">Eps Seen:</label>
+                                                <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light text-right pr-2">Eps Seen:</label>
                                                 <div className="flex items-center space-x-2">
                                                     <input 
                                                         type="number" 
@@ -361,21 +424,21 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                                         max={currentAnime.episodes !== 'N/A' ? currentAnime.episodes : 999}
                                                         value={malProgress} 
                                                         onChange={(e) => setMalProgress(parseInt(e.target.value) || 0)}
-                                                        className="w-16 bg-[#2c2c2c] border border-[#444444] text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-blue-500"
+                                                        className="w-16 bg-darkBg/60 border border-animePurple/20 text-white text-xs rounded px-2 py-1 text-center focus:outline-none focus:border-animePurple focus:ring-1 focus:ring-animePurple transition-all"
                                                     />
                                                     <span className="text-gray-400 font-bold">/ {currentAnime.episodes !== 'N/A' && currentAnime.episodes ? currentAnime.episodes : '??'}</span>
                                                 </div>
                                             </div>
                                         )}
-
+ 
                                         {/* Your Score Row */}
                                         <div className="grid grid-cols-[90px_1fr] items-center gap-2">
-                                            <label className="text-gray-300 font-bold text-right pr-2">Your Score:</label>
+                                            <label className="text-[10px] font-orbitron font-bold uppercase tracking-wider text-animePurple-light text-right pr-2">Your Score:</label>
                                             <div className="relative">
                                                 <select 
                                                     value={malScore} 
                                                     onChange={(e) => setMalScore(parseInt(e.target.value) || 0)}
-                                                    className="w-full bg-[#2c2c2c] hover:bg-[#333333] border border-[#444444] text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none transition-colors appearance-none pr-8 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                    className="w-full bg-darkBg/60 border border-animePurple/20 text-white text-xs rounded px-2.5 py-1.5 cursor-pointer outline-none transition-all appearance-none pr-8 focus:border-animePurple focus:ring-1 focus:ring-animePurple"
                                                 >
                                                     <option value="0">Select</option>
                                                     <option value="10">10 (Masterpiece)</option>
@@ -395,30 +458,25 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                                             </div>
                                         </div>
                                     </div>
-
+ 
                                     {/* Action Buttons Row */}
-                                    <div className="pt-2 flex items-center space-x-3 pl-[90px]">
-                                        <button 
-                                            onClick={handleMALSync}
-                                            disabled={isUpdatingMAL}
-                                            className="px-5 py-1.5 bg-[#2e51a2] text-white hover:bg-[#3b5ca9] font-bold text-xs rounded shadow-md transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-50"
-                                        >
-                                            {isUpdatingMAL ? 'Syncing...' : (currentAnime.my_list_status ? 'Save' : 'Add')}
-                                        </button>
-                                        
-                                        {currentAnime.my_list_status ? (
+                                    <div className="pt-3.5 flex items-center justify-end space-x-3 border-t border-animePurple/15 select-none">
+                                        {currentAnime.my_list_status && (
                                             <button 
                                                 onClick={handleMALDelete}
                                                 disabled={isUpdatingMAL}
-                                                className="text-red-400 hover:text-red-300 font-semibold text-xs transition-colors cursor-pointer"
+                                                className="text-red-400 hover:text-red-300 font-orbitron font-bold text-[10px] tracking-wider transition-all uppercase py-1.5 cursor-pointer"
                                             >
                                                 Remove
                                             </button>
-                                        ) : (
-                                            <span className="text-[#2e51a2] hover:underline font-semibold text-xs cursor-pointer">
-                                                Add Detailed Info
-                                            </span>
                                         )}
+                                        <button 
+                                            onClick={handleMALSync}
+                                            disabled={isUpdatingMAL}
+                                            className="px-5 py-2.5 bg-gradient-to-r from-animePurple to-purple-800 text-white hover:from-purple-500 hover:to-purple-700 font-orbitron font-black text-xs tracking-widest rounded shadow-md shadow-animePurple/20 transition-all duration-150 active:scale-95 cursor-pointer disabled:opacity-50"
+                                        >
+                                            {isUpdatingMAL ? 'Syncing...' : (currentAnime.my_list_status ? 'UPDATE' : 'SAVE')}
+                                        </button>
                                     </div>
                                 </div>
                             ) : (
