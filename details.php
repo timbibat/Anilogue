@@ -58,8 +58,21 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
                     setMyList(animeIds);
                     setMyMangaList(mangaIds);
                 }
+            }
+        };
+
+        const loadWatchlistFromMAL = async () => {
+            try {
+                const animeData = await apiService.getMALWatchlist('anime');
+                const mangaData = await apiService.getMALWatchlist('manga');
+                if (animeData && animeData.success && animeData.watchlist) {
+                    setMyList(animeData.watchlist);
+                }
+                if (mangaData && mangaData.success && mangaData.watchlist) {
+                    setMyMangaList(mangaData.watchlist);
+                }
             } catch (e) {
-                console.error("Failed to load watchlist from DB:", e);
+                console.error("Failed to load MAL watchlist:", e);
             }
         };
 
@@ -108,6 +121,9 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
                         setAuthType('mal');
                         setUsername(malUser.username);
                         setUserPicture(malUser.picture || "");
+                        
+                        // Load live watchlist from MyAnimeList
+                        await loadWatchlistFromMAL();
                     }
                 } catch (err) {
                     console.error("Auth verification failed:", err);

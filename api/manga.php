@@ -60,6 +60,28 @@ switch ($action) {
         fetchAndMapMangaDetail($url);
         break;
 
+    case 'my_watchlist':
+        if (!isOauthAuthenticated()) {
+            echo json_encode(['error' => 'Not authenticated']);
+            exit;
+        }
+        $url = MAL_API_URL . '/users/@me/mangalist?limit=1000';
+        $rawData = makeMALRequest($url);
+        if (isset($rawData['error'])) {
+            echo json_encode($rawData);
+            exit;
+        }
+        $ids = [];
+        if (isset($rawData['data'])) {
+            foreach ($rawData['data'] as $node) {
+                if (isset($node['node']['id'])) {
+                    $ids[] = intval($node['node']['id']);
+                }
+            }
+        }
+        echo json_encode(['success' => true, 'watchlist' => $ids]);
+        exit;
+
     case 'update_status':
         if (!isOauthAuthenticated()) {
             echo json_encode(['error' => 'You must be logged in via MyAnimeList to sync watchlists.']);

@@ -55,6 +55,8 @@ window.App = function App() {
     const [myMangaListDetails, setMyMangaListDetails] = useState([]);
     const [mymangaListLoading, setMymangaListLoading] = useState(false);
     const [mylistSubTab, setMylistSubTab] = useState("anime"); // 'anime' | 'manga'
+    const [hasMergeableItems, setHasMergeableItems] = useState(false);
+    const [isMerging, setIsMerging] = useState(false);
 
     // Helper: Load watchlist IDs from the database for the current local user
     const loadWatchlistFromDB = async () => {
@@ -72,6 +74,22 @@ window.App = function App() {
             }
         } catch (e) {
             console.error("Failed to load watchlist from DB:", e);
+        }
+    };
+
+    // Helper: Load watchlist IDs from MyAnimeList for the logged in MAL user
+    const loadWatchlistFromMAL = async () => {
+        try {
+            const animeData = await apiService.getMALWatchlist('anime');
+            const mangaData = await apiService.getMALWatchlist('manga');
+            if (animeData && animeData.success && animeData.watchlist) {
+                setMyList(animeData.watchlist);
+            }
+            if (mangaData && mangaData.success && mangaData.watchlist) {
+                setMyMangaList(mangaData.watchlist);
+            }
+        } catch (e) {
+            console.error("Failed to load MAL watchlist:", e);
         }
     };
 
@@ -263,6 +281,25 @@ window.App = function App() {
             }
         }
 
+        const checkForMergeableItems = async () => {
+            const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
+            const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
+            if (guestAnime.length > 0 || guestManga.length > 0) {
+                setHasMergeableItems(true);
+                return;
+            }
+            try {
+                const dbData = await apiService.getDBWatchlist();
+                if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
+                    setHasMergeableItems(true);
+                } else {
+                    setHasMergeableItems(false);
+                }
+            } catch (e) {
+                setHasMergeableItems(false);
+            }
+        };
+
         // Check local database session first, then fall back to MAL OAuth
         async function checkUserAuth() {
             try {
@@ -287,8 +324,11 @@ window.App = function App() {
                     setUsername(malUser.username);
                     setUserPicture(malUser.picture || "");
                     
-                    // Trigger dynamic local/db watchlist merge automatically upon MAL auth detection
-                    await triggerGuestAndDBMerge();
+                    // Load live watchlist IDs from MyAnimeList
+                    await loadWatchlistFromMAL();
+                    
+                    // Scan for mergeable local list items to present the merge option
+                    await checkForMergeableItems();
                 }
             } catch (err) {
                 console.error("Auth verification failed:", err);
@@ -729,6 +769,47 @@ window.App = function App() {
                                     </h2>
                                     <p className="text-xs text-gray-400 font-medium">Your customized watchlists synced to storage</p>
                                 </div>
+
+                                {/* Premium Glowing Merge Banner Option */}
+                                {hasMergeableItems && authType === 'mal' && (
+                                    <div className="mb-8 p-6 rounded-2xl bg-darkCard/90 border border-animePurple/40 shadow-neon-purple shadow-animePurple/10 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in text-left">
+                                        <div className="flex items-center space-x-4 text-left">
+                                            <div className="w-12 h-12 rounded-full bg-animePurple/20 border border-animePurple flex items-center justify-center text-animePurple flex-none animate-pulse">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3a2.82 2.82 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h4 className="font-orbitron font-bold text-sm text-white uppercase tracking-wider">Unsynced Local List Detected</h4>
+                                                <p className="text-xs text-gray-400 leading-relaxed font-semibold">We found items in your local Guest or Anilogue account watchlist. Would you like to merge them into your MyAnimeList profile?</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center space-x-3 w-full md:w-auto">
+                                            <button 
+                                                onClick={() => setHasMergeableItems(false)}
+                                                className="px-5 py-2.5 rounded border border-white/10 hover:border-white/20 text-xs text-gray-300 hover:text-white font-orbitron font-bold tracking-wider transition-all cursor-pointer bg-darkBg/30"
+                                            >
+                                                DISMISS
+                                            </button>
+                                            <button 
+                                                onClick={async () => {
+                                                    setIsMerging(true);
+                                                    await triggerGuestAndDBMerge();
+                                                    setIsMerging(false);
+                                                }}
+                                                disabled={isMerging}
+                                                className="px-6 py-2.5 bg-gradient-to-r from-animePurple to-purple-800 text-white hover:from-purple-500 hover:to-purple-700 font-orbitron font-black text-xs tracking-widest rounded shadow-md shadow-animePurple/30 transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center space-x-2"
+                                            >
+                                                {isMerging ? (
+                                                    <>
+                                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        <span>MERGING...</span>
+                                                    </>
+                                                ) : (
+                                                    <span>MERGE TO MYANIMELIST</span>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Premium Category Sub-Tabs Selector */}
                                 <div className="flex gap-4 border-b border-animePurple/15 mb-8 pb-1 font-orbitron text-xs sm:text-sm font-bold">

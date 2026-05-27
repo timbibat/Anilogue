@@ -150,6 +150,10 @@ window.apiService = {
     getCurrentUser,
     updateMALListStatus,
     deleteMALListItem,
+    getMALWatchlist: async function(type = 'anime') {
+        const proxy = type === 'manga' ? window.MANGA_PROXY_URL || 'api/manga.php' : window.PROXY_URL || 'api/anime.php';
+        return await fetchFromProxy(`${proxy}?action=my_watchlist`);
+    },
     
     // Manga API Section
     searchManga: async function(query) {
