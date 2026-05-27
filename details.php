@@ -58,6 +58,8 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
                     setMyList(animeIds);
                     setMyMangaList(mangaIds);
                 }
+            } catch (e) {
+                console.error("Failed to load watchlist from DB:", e);
             }
         };
 

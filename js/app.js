@@ -288,16 +288,21 @@ window.App = function App() {
                 setHasMergeableItems(true);
                 return;
             }
-            try {
-                const dbData = await apiService.getDBWatchlist();
-                if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
-                    setHasMergeableItems(true);
-                } else {
-                    setHasMergeableItems(false);
+            
+            // Only query DB watchlist if logged in locally (avoids 412 errors for MAL-only sessions)
+            if (isLoggedIn && authType === 'local') {
+                try {
+                    const dbData = await apiService.getDBWatchlist();
+                    if (dbData && dbData.success && dbData.watchlist && dbData.watchlist.length > 0) {
+                        setHasMergeableItems(true);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Local DB check error:", e);
                 }
-            } catch (e) {
-                setHasMergeableItems(false);
             }
+            
+            setHasMergeableItems(false);
         };
 
         // Check local database session first, then fall back to MAL OAuth
