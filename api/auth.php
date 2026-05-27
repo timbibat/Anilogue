@@ -40,7 +40,7 @@ if ($action === 'logout') {
     unset($_SESSION['oauth2_state']);
     unset($_SESSION['oauth2_verifier']);
     
-    header('Location: ../index.php');
+    header('Location: ../');
     exit;
 }
 
@@ -95,7 +95,7 @@ if (isset($_GET['code'])) {
             }
             
             // Redirect back to main browse portal
-            header('Location: ../index.php');
+            header('Location: ../');
             exit;
         }
     }
@@ -104,10 +104,10 @@ if (isset($_GET['code'])) {
     echo '<h3>Failed to retrieve MyAnimeList Access Token</h3>';
     echo '<p>HTTP Code: ' . $httpCode . '</p>';
     echo '<pre>' . htmlspecialchars($response) . '</pre>';
-    echo '<p><a href="../index.php">Return to index</a></p>';
+    echo '<p><a href="../">Return to index</a></p>';
     exit;
 }
 
 // Default landing page redirects back to home browse
-header('Location: ../index.php');
+header('Location: ../');
 exit;

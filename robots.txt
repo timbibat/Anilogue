@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /config.php
+Disallow: /includes/
+
+Sitemap: https://anilogue.free.nf/sitemap.xml

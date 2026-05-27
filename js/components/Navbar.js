@@ -114,7 +114,7 @@ window.Navbar = function Navbar({ activeTab, setActiveTab, searchQuery, setSearc
                             onChange={(e) => {
                                 const val = e.target.value;
                                 setLocalQuery(val);
-                                if (!window.location.pathname.includes("details.php")) {
+                                if (!window.location.pathname.includes("details")) {
                                     setSearchQuery(val);
                                 }
                             }}

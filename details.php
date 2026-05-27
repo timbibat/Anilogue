@@ -3,10 +3,82 @@
  * Anilogue - Dedicated Anime Profile Webpage
  */
 require_once 'config.php';
-include 'includes/header.php';
+
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $type = isset($_GET['type']) ? $_GET['type'] : 'anime';
 $from = isset($_GET['from']) ? $_GET['from'] : '';
+
+// SEO Dynamic Configuration
+$seo_title = "ANILOGUE | Watch Premium Anime Online";
+$seo_description = "Stream the latest anime releases straight from Japan. High-speed streaming, dark-mode premium player, same-day releases, and popular hits.";
+$seo_keywords = "anime, streaming, watch anime, subbed, dubbed, myanimelist, live anime, anilogue, premium anime";
+$seo_image = "https://anilogue.free.nf/images/favicon.png";
+$seo_url = "https://anilogue.free.nf/details?id=" . $id . "&type=" . $type;
+
+if ($id > 0) {
+    // Fetch data from MyAnimeList API to populate real SEO metadata server-side
+    $apiUrl = MAL_API_URL . '/' . ($type === 'manga' ? 'manga' : 'anime') . '/' . $id . '?fields=title,main_picture,synopsis,genres';
+    
+    // Call MyAnimeList API
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    
+    $headers = [];
+    if (isset($_SESSION['mal_access_token'])) {
+        $headers[] = 'Authorization: Bearer ' . $_SESSION['mal_access_token'];
+    } else {
+        $token = trim(MAL_CLIENT_ID);
+        if (strlen($token) <= 45) {
+            $headers[] = 'X-MAL-CLIENT-ID: ' . $token;
+        } else {
+            if (strpos(strtolower($token), 'bearer ') === 0) {
+                $token = substr($token, 7);
+            }
+            $headers[] = 'Authorization: Bearer ' . $token;
+        }
+    }
+    
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 4); // Quick timeout to ensure page load is fast
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($httpCode === 200) {
+        $data = json_decode($response, true);
+        if ($data && isset($data['title'])) {
+            $title = $data['title'];
+            $seo_title = htmlspecialchars($title) . " | Watch Online on ANILOGUE";
+            
+            if (isset($data['synopsis']) && !empty($data['synopsis'])) {
+                $synopsis = strip_tags($data['synopsis']);
+                if (strlen($synopsis) > 170) {
+                    $synopsis = substr($synopsis, 0, 167) . '...';
+                }
+                $seo_description = htmlspecialchars($synopsis);
+            }
+            
+            if (isset($data['genres']) && is_array($data['genres'])) {
+                $genreNames = [];
+                foreach ($data['genres'] as $g) {
+                    $genreNames[] = strtolower($g['name']);
+                }
+                if (!empty($genreNames)) {
+                    $seo_keywords = htmlspecialchars(implode(', ', $genreNames)) . ", anime, streaming, watch, anilogue";
+                }
+            }
+            
+            if (isset($data['main_picture'])) {
+                $seo_image = isset($data['main_picture']['large']) ? $data['main_picture']['large'] : $data['main_picture']['medium'];
+            }
+        }
+    }
+}
+
+include 'includes/header.php';
 ?>
 
 <!-- React Mount Node -->
@@ -156,12 +228,12 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
                 <Navbar 
                     activeTab="" 
                     setActiveTab={(tab) => {
-                        window.location.href = './index.php?tab=' + tab;
+                        window.location.href = './?tab=' + tab;
                     }} 
                     searchQuery=""
                     setSearchQuery={(query) => {
                         if (query.trim() !== "") {
-                            window.location.href = './index.php?q=' + encodeURIComponent(query);
+                            window.location.href = './?q=' + encodeURIComponent(query);
                         }
                     }}
                     isLoggedIn={isLoggedIn}
@@ -179,7 +251,7 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
                         isLoggedIn={isLoggedIn}
                         authType={authType}
                         onClose={() => {
-                            window.location.href = './index.php?tab=' + (fromTab || (mediaType === 'manga' ? 'manga' : 'home'));
+                            window.location.href = './?tab=' + (fromTab || (mediaType === 'manga' ? 'manga' : 'home'));
                         }}
                         toggleBookmark={toggleBookmark}
                         myList={mediaType === 'manga' ? myMangaList : myList}

@@ -1,3 +1,14 @@
+<?php
+// Default SEO Values
+$siteUrl = "https://anilogue.free.nf";
+$currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+$display_title = isset($seo_title) ? $seo_title : "ANILOGUE | Watch Premium Anime Online";
+$display_desc = isset($seo_description) ? $seo_description : "Stream the latest anime releases straight from Japan. High-speed streaming, dark-mode premium player, same-day releases, and popular hits. Driven live by MyAnimeList API on anilogue.free.nf.";
+$display_keywords = isset($seo_keywords) ? $seo_keywords : "anime, streaming, watch anime, subbed, dubbed, myanimelist, live anime, anilogue, premium anime";
+$display_image = isset($seo_image) ? $seo_image : "$siteUrl/images/favicon.png";
+$display_canonical = isset($seo_canonical) ? $seo_canonical : $currentUrl;
+?>
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -5,10 +16,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Optimization -->
-    <title>ANILOGUE | Watch Premium Anime Online</title>
-    <meta name="description" content="Stream the latest anime releases straight from Japan. High-speed streaming, dark-mode premium player, same-day releases, and popular hits. Driven live by MyAnimeList API on anilogue.free.nf.">
-    <meta name="keywords" content="anime, streaming, watch anime, subbed, dubbed, myanimelist, live anime, anilogue, premium anime">
+    <title><?php echo $display_title; ?></title>
+    <meta name="description" content="<?php echo $display_desc; ?>">
+    <meta name="keywords" content="<?php echo $display_keywords; ?>">
     <meta name="author" content="Anilogue Interactive">
+    <link rel="canonical" href="<?php echo $display_canonical; ?>">
+    
+    <!-- Google Site Verification -->
+    <meta name="google-site-verification" content="Ksx0knZTSJXvDiiHjmv21hcT40_VEK4a-LpA9oHv-FM" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="<?php echo $display_canonical; ?>">
+    <meta property="og:title" content="<?php echo $display_title; ?>">
+    <meta property="og:description" content="<?php echo $display_desc; ?>">
+    <meta property="og:image" content="<?php echo $display_image; ?>">
+    <meta property="og:site_name" content="Anilogue">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="<?php echo $display_canonical; ?>">
+    <meta property="twitter:title" content="<?php echo $display_title; ?>">
+    <meta property="twitter:description" content="<?php echo $display_desc; ?>">
+    <meta property="twitter:image" content="<?php echo $display_image; ?>">
     
     <!-- Favicon Icon -->
     <link rel="icon" type="image/png" href="images/favicon.png">

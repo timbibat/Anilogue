@@ -22,7 +22,7 @@ window.App = function App() {
     // Modals & Authentication
     const handleAnimeSelect = (anime) => {
         const type = (anime.type && ['Manga', 'Novel', 'Lightnovel', 'Oneshot', 'Doujin', 'Manhwa', 'Manhua'].includes(anime.type)) || anime.chapters !== undefined ? 'manga' : 'anime';
-        window.location.href = `details.php?type=${type}&id=${anime.id}&from=${activeTab}`;
+        window.location.href = `details?type=${type}&id=${anime.id}&from=${activeTab}`;
     };
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [selectedWatchlistItem, setSelectedWatchlistItem] = useState(null);
@@ -63,9 +63,9 @@ window.App = function App() {
         const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
         const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
         const guestDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
-        
+
         let mergedAny = false;
-        
+
         if (guestAnime.length > 0 || guestManga.length > 0) {
             console.log("Found guest watchlist items. Auto-merging to MyAnimeList...");
             for (const id of guestAnime) {
@@ -97,7 +97,7 @@ window.App = function App() {
             localStorage.removeItem("guestMangaWatchlist");
             localStorage.removeItem("guestWatchlistDetails");
         }
-        
+
         if (mergedAny) {
             alert("Successfully merged your local Guest Watchlist items into your MyAnimeList account!");
             window.location.reload();
@@ -256,10 +256,10 @@ window.App = function App() {
                     setAuthType('mal');
                     setUsername(malUser.username);
                     setUserPicture(malUser.picture || "");
-                    
+
                     // Load live watchlist IDs from MyAnimeList
                     await loadWatchlistFromMAL();
-                    
+
                     // Scan for mergeable local Guest list items to present the merge option
                     await checkForMergeableItems();
                 }
@@ -316,19 +316,19 @@ window.App = function App() {
     // Sync active tab and search query with the browser address bar dynamically without reloading
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        
+
         if (activeTab === "home") {
             params.delete("tab");
         } else {
             params.set("tab", activeTab);
         }
-        
+
         if (searchQuery.trim() === "") {
             params.delete("q");
         } else {
             params.set("q", searchQuery);
         }
-        
+
         const newSearch = params.toString();
         const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "");
         window.history.replaceState(null, "", newUrl);
@@ -704,7 +704,7 @@ window.App = function App() {
                                     <div className="mb-8 p-6 rounded-2xl bg-darkCard/90 border border-animePurple/40 shadow-neon-purple shadow-animePurple/10 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in text-left">
                                         <div className="flex items-center space-x-4 text-left">
                                             <div className="w-12 h-12 rounded-full bg-animePurple/20 border border-animePurple flex items-center justify-center text-animePurple flex-none animate-pulse">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3a2.82 2.82 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3a2.82 2.82 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
                                             </div>
                                             <div className="space-y-1">
                                                 <h4 className="font-orbitron font-bold text-sm text-white uppercase tracking-wider">Unsynced Local List Detected</h4>
@@ -712,13 +712,13 @@ window.App = function App() {
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-3 w-full md:w-auto">
-                                            <button 
+                                            <button
                                                 onClick={() => setHasMergeableItems(false)}
                                                 className="px-5 py-2.5 rounded border border-white/10 hover:border-white/20 text-xs text-gray-300 hover:text-white font-orbitron font-bold tracking-wider transition-all cursor-pointer bg-darkBg/30"
                                             >
                                                 DISMISS
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={async () => {
                                                     setIsMerging(true);
                                                     await triggerGuestAndDBMerge();
@@ -742,7 +742,7 @@ window.App = function App() {
 
                                 {/* Premium Category Sub-Tabs Selector */}
                                 <div className="flex gap-4 border-b border-animePurple/15 mb-8 pb-1 font-orbitron text-xs sm:text-sm font-bold">
-                                    <button 
+                                    <button
                                         onClick={() => setMylistSubTab("anime")}
                                         className={`pb-3 px-2 uppercase tracking-wider relative cursor-pointer transition-colors flex items-center space-x-2 ${mylistSubTab === 'anime' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                                     >
@@ -750,7 +750,7 @@ window.App = function App() {
                                         <span className="bg-animePurple text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">{myList.length}</span>
                                         {mylistSubTab === 'anime' && <span className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-animePurple to-transparent"></span>}
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setMylistSubTab("manga")}
                                         className={`pb-3 px-2 uppercase tracking-wider relative cursor-pointer transition-colors flex items-center space-x-2 ${mylistSubTab === 'manga' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                                     >
