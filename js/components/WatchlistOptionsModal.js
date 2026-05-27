@@ -100,35 +100,21 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                 onSaveSuccess();
                 onClose();
             } else {
-                if (authType === 'local') {
-                    // Save to local database
-                    const res = await apiService.saveToDBWatchlist(
-                        item.id, item.type, status, progress, volsProgress, score
-                    );
-                    if (res && res.success) {
-                        alert("Successfully saved to your watchlist!");
-                        onSaveSuccess();
-                        onClose();
-                    } else {
-                        alert("Error saving: " + (res ? res.error : "Unknown error"));
-                    }
+                // Sync to MAL
+                const extraFields = { score };
+                if (item.type === "manga") {
+                    extraFields.num_chapters_read = progress;
+                    extraFields.num_volumes_read = volsProgress;
                 } else {
-                    // Sync to MAL
-                    const extraFields = { score };
-                    if (item.type === "manga") {
-                        extraFields.num_chapters_read = progress;
-                        extraFields.num_volumes_read = volsProgress;
-                    } else {
-                        extraFields.num_watched_episodes = progress;
-                    }
-                    const res = await apiService.updateMALListStatus(item.id, status, item.type, extraFields);
-                    if (res && !res.error) {
-                        alert("Successfully synchronized to MyAnimeList!");
-                        onSaveSuccess();
-                        onClose();
-                    } else {
-                        alert("Error synchronizing: " + (res ? res.error : "Unknown error"));
-                    }
+                    extraFields.num_watched_episodes = progress;
+                }
+                const res = await apiService.updateMALListStatus(item.id, status, item.type, extraFields);
+                if (res && !res.error) {
+                    alert("Successfully synchronized to MyAnimeList!");
+                    onSaveSuccess();
+                    onClose();
+                } else {
+                    alert("Error synchronizing: " + (res ? res.error : "Unknown error"));
                 }
             }
         } catch (e) {
@@ -159,24 +145,13 @@ window.WatchlistOptionsModal = function WatchlistOptionsModal({ item, isLoggedIn
                 onSaveSuccess();
                 onClose();
             } else {
-                if (authType === 'local') {
-                    const res = await apiService.deleteFromDBWatchlist(item.id, item.type);
-                    if (res && res.success) {
-                        alert("Removed from watchlist successfully!");
-                        onSaveSuccess();
-                        onClose();
-                    } else {
-                        alert("Error removing: " + (res ? res.error : "Unknown error"));
-                    }
+                const res = await apiService.deleteMALListItem(item.id, item.type);
+                if (res && !res.error) {
+                    alert("Removed from MyAnimeList successfully!");
+                    onSaveSuccess();
+                    onClose();
                 } else {
-                    const res = await apiService.deleteMALListItem(item.id, item.type);
-                    if (res && !res.error) {
-                        alert("Removed from MyAnimeList successfully!");
-                        onSaveSuccess();
-                        onClose();
-                    } else {
-                        alert("Error removing: " + (res ? res.error : "Unknown error"));
-                    }
+                    alert("Error removing: " + (res ? res.error : "Unknown error"));
                 }
             }
         } catch (e) {

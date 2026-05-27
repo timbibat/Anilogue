@@ -58,22 +58,60 @@ window.App = function App() {
     const [hasMergeableItems, setHasMergeableItems] = useState(false);
     const [isMerging, setIsMerging] = useState(false);
 
-    // Helper: Load watchlist IDs from the database for the current local user
-    const loadWatchlistFromDB = async () => {
-        try {
-            const dbData = await apiService.getDBWatchlist();
-            if (dbData && dbData.success && dbData.watchlist) {
-                const animeIds = dbData.watchlist
-                    .filter(item => item.media_type === 'anime')
-                    .map(item => parseInt(item.media_id));
-                const mangaIds = dbData.watchlist
-                    .filter(item => item.media_type === 'manga')
-                    .map(item => parseInt(item.media_id));
-                setMyList(animeIds);
-                setMyMangaList(mangaIds);
+    // Helper: Merge Guest localStorage Watchlist to MyAnimeList
+    const triggerGuestAndDBMerge = async () => {
+        const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
+        const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
+        const guestDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
+        
+        let mergedAny = false;
+        
+        if (guestAnime.length > 0 || guestManga.length > 0) {
+            console.log("Found guest watchlist items. Auto-merging to MyAnimeList...");
+            for (const id of guestAnime) {
+                try {
+                    const detail = guestDetails[id] || {};
+                    await apiService.updateMALListStatus(id, detail.status || 'plan_to_watch', 'anime', {
+                        score: detail.score || 0,
+                        num_watched_episodes: detail.progress || 0
+                    });
+                    mergedAny = true;
+                } catch (e) {
+                    console.error(`Failed to merge guest anime ${id} to MAL:`, e);
+                }
             }
-        } catch (e) {
-            console.error("Failed to load watchlist from DB:", e);
+            for (const id of guestManga) {
+                try {
+                    const detail = guestDetails[id] || {};
+                    await apiService.updateMALListStatus(id, detail.status || 'plan_to_read', 'manga', {
+                        score: detail.score || 0,
+                        num_chapters_read: detail.progress || 0,
+                        num_volumes_read: detail.volumes_progress || 0
+                    });
+                    mergedAny = true;
+                } catch (e) {
+                    console.error(`Failed to merge guest manga ${id} to MAL:`, e);
+                }
+            }
+            localStorage.removeItem("guestWatchlist");
+            localStorage.removeItem("guestMangaWatchlist");
+            localStorage.removeItem("guestWatchlistDetails");
+        }
+        
+        if (mergedAny) {
+            alert("Successfully merged your local Guest Watchlist items into your MyAnimeList account!");
+            window.location.reload();
+        }
+    };
+
+    // Helper: Check if guest watchlist has mergeable items
+    const checkForMergeableItems = async () => {
+        const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
+        const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
+        if (guestAnime.length > 0 || guestManga.length > 0) {
+            setHasMergeableItems(true);
+        } else {
+            setHasMergeableItems(false);
         }
     };
 
@@ -207,61 +245,7 @@ window.App = function App() {
 
         let isMounted = true;
 
-        async function triggerGuestAndDBMerge() {
-            // Merge Guest localStorage Watchlist
-            const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
-            const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
-            const guestDetails = localStorage.getItem("guestWatchlistDetails") ? JSON.parse(localStorage.getItem("guestWatchlistDetails")) : {};
-            
-            let mergedAny = false;
-            
-            if (guestAnime.length > 0 || guestManga.length > 0) {
-                console.log("Found guest watchlist items. Auto-merging to MyAnimeList...");
-                for (const id of guestAnime) {
-                    try {
-                        const detail = guestDetails[id] || {};
-                        await apiService.updateMALListStatus(id, detail.status || 'plan_to_watch', 'anime', {
-                            score: detail.score || 0,
-                            num_watched_episodes: detail.progress || 0
-                        });
-                        mergedAny = true;
-                    } catch (e) {
-                        console.error(`Failed to merge guest anime ${id} to MAL:`, e);
-                    }
-                }
-                for (const id of guestManga) {
-                    try {
-                        const detail = guestDetails[id] || {};
-                        await apiService.updateMALListStatus(id, detail.status || 'plan_to_read', 'manga', {
-                            score: detail.score || 0,
-                            num_chapters_read: detail.progress || 0,
-                            num_volumes_read: detail.volumes_progress || 0
-                        });
-                        mergedAny = true;
-                    } catch (e) {
-                        console.error(`Failed to merge guest manga ${id} to MAL:`, e);
-                    }
-                }
-                localStorage.removeItem("guestWatchlist");
-                localStorage.removeItem("guestMangaWatchlist");
-                localStorage.removeItem("guestWatchlistDetails");
-            }
-            
-            if (mergedAny) {
-                alert("Successfully merged your local Guest Watchlist items into your MyAnimeList account!");
-                window.location.reload();
-            }
-        }
 
-        const checkForMergeableItems = async () => {
-            const guestAnime = localStorage.getItem("guestWatchlist") ? JSON.parse(localStorage.getItem("guestWatchlist")) : [];
-            const guestManga = localStorage.getItem("guestMangaWatchlist") ? JSON.parse(localStorage.getItem("guestMangaWatchlist")) : [];
-            if (guestAnime.length > 0 || guestManga.length > 0) {
-                setHasMergeableItems(true);
-            } else {
-                setHasMergeableItems(false);
-            }
-        };
 
         // Check active MyAnimeList user session
         async function checkUserAuth() {
@@ -388,11 +372,7 @@ window.App = function App() {
     // Callback when options are successfully saved/removed in WatchlistOptionsModal
     const handleWatchlistSaveSuccess = async () => {
         if (isLoggedIn) {
-            if (authType === 'local') {
-                await loadWatchlistFromDB();
-            } else {
-                window.location.reload();
-            }
+            window.location.reload();
         } else {
             // For Guest users, update state directly from localStorage
             const savedList = localStorage.getItem("guestWatchlist");

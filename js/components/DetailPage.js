@@ -138,19 +138,6 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                     toggleBookmark(currentAnime.id, type);
                 }
                 alert("Successfully saved to your local guest watchlist!");
-            } else if (authType === 'local') {
-                // Save to local database
-                const res = await apiService.saveToDBWatchlist(
-                    currentAnime.id, type, malStatus, malProgress, malVolsProgress, malScore
-                );
-                if (res && res.success) {
-                    if (!isBookmarked) {
-                        toggleBookmark(currentAnime.id, type);
-                    }
-                    alert("Successfully saved to your watchlist!");
-                } else {
-                    alert("Error saving: " + (res ? res.error : "Unknown error"));
-                }
             } else {
                 // Sync to MyAnimeList
                 const extraFields = {
@@ -206,20 +193,6 @@ window.DetailPage = function DetailPage({ anime, onClose, toggleBookmark, myList
                 setMalVolsProgress(0);
                 setMalScore(0);
                 alert("Removed from your local watchlist successfully!");
-            } else if (authType === 'local') {
-                const res = await apiService.deleteFromDBWatchlist(currentAnime.id, type);
-                if (res && res.success) {
-                    if (isBookmarked) {
-                        toggleBookmark(currentAnime.id, type);
-                    }
-                    setMalStatus(type === "manga" ? "plan_to_read" : "plan_to_watch");
-                    setMalProgress(0);
-                    setMalVolsProgress(0);
-                    setMalScore(0);
-                    alert("Removed from your watchlist successfully!");
-                } else {
-                    alert("Error removing: " + (res ? res.error : "Unknown error"));
-                }
             } else {
                 const res = await apiService.deleteMALListItem(currentAnime.id, type);
                 if (res && !res.error) {

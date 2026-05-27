@@ -44,25 +44,6 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
         const [myList, setMyList] = useState([]);
         const [myMangaList, setMyMangaList] = useState([]);
 
-        // Helper: Load watchlist IDs from the database for the current local user
-        const loadWatchlistFromDB = async () => {
-            try {
-                const dbData = await apiService.getDBWatchlist();
-                if (dbData && dbData.success && dbData.watchlist) {
-                    const animeIds = dbData.watchlist
-                        .filter(item => item.media_type === 'anime')
-                        .map(item => parseInt(item.media_id));
-                    const mangaIds = dbData.watchlist
-                        .filter(item => item.media_type === 'manga')
-                        .map(item => parseInt(item.media_id));
-                    setMyList(animeIds);
-                    setMyMangaList(mangaIds);
-                }
-            } catch (e) {
-                console.error("Failed to load watchlist from DB:", e);
-            }
-        };
-
         const loadWatchlistFromMAL = async () => {
             try {
                 const animeData = await apiService.getMALWatchlist('anime');
@@ -100,23 +81,11 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
             }
         }, [myList, myMangaList, isLoggedIn]);
 
-        // Check local DB session first, then MAL OAuth
+        // Check active MyAnimeList user session
         useEffect(() => {
             let isMounted = true;
             async function checkUserAuth() {
                 try {
-                    const localSession = await apiService.getLocalUserSession();
-                    if (isMounted && localSession && localSession.isLoggedIn) {
-                        if (localSession.authType === 'local') {
-                            setIsLoggedIn(true);
-                            setAuthType('local');
-                            setUsername(localSession.user.username);
-                            setUserPicture("");
-                            // Load this user's watchlist from the database
-                            await loadWatchlistFromDB();
-                            return;
-                        }
-                    }
                     const malUser = await apiService.getCurrentUser();
                     if (isMounted && malUser && malUser.isLoggedIn) {
                         setIsLoggedIn(true);
@@ -143,45 +112,25 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
             if (itemType === 'manga') {
                 if (myMangaList.includes(id)) {
                     setMyMangaList(myMangaList.filter(item => item !== id));
-                    if (isLoggedIn) {
-                        if (authType === 'local') {
-                            try { await apiService.deleteFromDBWatchlist(id, 'manga'); } catch (e) { console.error("DB delete failed:", e); }
-                        }
-                        if (authType === 'mal') {
-                            try { await apiService.deleteMALListItem(id, 'manga'); } catch (e) { console.error("MAL unsync failed:", e); }
-                        }
+                    if (isLoggedIn && authType === 'mal') {
+                        try { await apiService.deleteMALListItem(id, 'manga'); } catch (e) { console.error("MAL unsync failed:", e); }
                     }
                 } else {
                     setMyMangaList([...myMangaList, id]);
-                    if (isLoggedIn) {
-                        if (authType === 'local') {
-                            try { await apiService.saveToDBWatchlist(id, 'manga', 'plan_to_read'); } catch (e) { console.error("DB save failed:", e); }
-                        }
-                        if (authType === 'mal') {
-                            try { await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga'); } catch (e) { console.error("MAL sync failed:", e); }
-                        }
+                    if (isLoggedIn && authType === 'mal') {
+                        try { await apiService.updateMALListStatus(id, 'plan_to_watch', 'manga'); } catch (e) { console.error("MAL sync failed:", e); }
                     }
                 }
             } else {
                 if (myList.includes(id)) {
                     setMyList(myList.filter(item => item !== id));
-                    if (isLoggedIn) {
-                        if (authType === 'local') {
-                            try { await apiService.deleteFromDBWatchlist(id, 'anime'); } catch (e) { console.error("DB delete failed:", e); }
-                        }
-                        if (authType === 'mal') {
-                            try { await apiService.deleteMALListItem(id, 'anime'); } catch (e) { console.error("MAL unsync failed:", e); }
-                        }
+                    if (isLoggedIn && authType === 'mal') {
+                        try { await apiService.deleteMALListItem(id, 'anime'); } catch (e) { console.error("MAL unsync failed:", e); }
                     }
                 } else {
                     setMyList([...myList, id]);
-                    if (isLoggedIn) {
-                        if (authType === 'local') {
-                            try { await apiService.saveToDBWatchlist(id, 'anime', 'plan_to_watch'); } catch (e) { console.error("DB save failed:", e); }
-                        }
-                        if (authType === 'mal') {
-                            try { await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime'); } catch (e) { console.error("MAL sync failed:", e); }
-                        }
+                    if (isLoggedIn && authType === 'mal') {
+                        try { await apiService.updateMALListStatus(id, 'plan_to_watch', 'anime'); } catch (e) { console.error("MAL sync failed:", e); }
                     }
                 }
             }
@@ -244,14 +193,10 @@ $from = isset($_GET['from']) ? $_GET['from'] : '';
                         onClose={() => setShowLoginModal(false)}
                         onLoginSuccess={async (user, loginAuthType) => {
                             setIsLoggedIn(true);
-                            setAuthType(loginAuthType || 'local');
+                            setAuthType(loginAuthType || 'mal');
                             setUsername(user);
                             setUserPicture("");
                             setShowLoginModal(false);
-                            // Load this user's saved watchlist from database
-                            if (loginAuthType === 'local') {
-                                await loadWatchlistFromDB();
-                            }
                         }}
                     />
                 )}
